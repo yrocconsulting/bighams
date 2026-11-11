@@ -1,0 +1,7 @@
+.DS_Store
+node_modules/
+*.log
+.env
+lint.txt
+/wp-config.php
+/wp-content/uploads/

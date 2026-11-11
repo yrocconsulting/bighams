@@ -1,0 +1,81 @@
+name: Deploy to SiteGround (staging)
+
+# Pushes to `main` deploy the theme + plugin to bighams.yroc.host.
+# Run manually from the Actions tab with "Run workflow" as well.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "wp-content/**"
+      - ".github/workflows/deploy.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          tools: none
+      - name: PHP syntax check
+        run: |
+          set +e
+          find wp-content -name '*.php' -print0 | xargs -0 -n1 php -l > lint.txt 2>&1
+          status=$?
+          grep -v '^No syntax errors' lint.txt
+          exit $status
+
+  deploy:
+    needs: lint
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure SSH
+        env:
+          SSH_KEY: ${{ secrets.SG_SSH_PRIVATE_KEY }}
+          KNOWN_HOSTS: ${{ secrets.SG_SSH_KNOWN_HOSTS }}
+          HOST: ${{ secrets.SG_SSH_HOST }}
+          PORT: ${{ secrets.SG_SSH_PORT }}
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key && chmod 600 ~/.ssh/deploy_key
+          if [ -n "$KNOWN_HOSTS" ]; then
+            printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          else
+            ssh-keyscan -p "${PORT:-18765}" "$HOST" > ~/.ssh/known_hosts
+          fi
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Sync theme and plugin
+        env:
+          HOST: ${{ secrets.SG_SSH_HOST }}
+          USER: ${{ secrets.SG_SSH_USER }}
+          PORT: ${{ secrets.SG_SSH_PORT }}
+          REMOTE: ${{ secrets.SG_REMOTE_PATH }}
+        run: |
+          SSH="ssh -i ~/.ssh/deploy_key -p ${PORT:-18765} -o StrictHostKeyChecking=yes"
+          # --delete is scoped to our own folders only; uploads, other plugins and wp-config are never touched.
+          for dir in themes/bighams plugins/bighams-core; do
+            rsync -az --delete --exclude '.DS_Store' --exclude 'node_modules' \
+              -e "$SSH" "wp-content/$dir/" "$USER@$HOST:$REMOTE/wp-content/$dir/"
+          done
+
+      - name: Post-deploy (flush caches)
+        env:
+          HOST: ${{ secrets.SG_SSH_HOST }}
+          USER: ${{ secrets.SG_SSH_USER }}
+          PORT: ${{ secrets.SG_SSH_PORT }}
+          REMOTE: ${{ secrets.SG_REMOTE_PATH }}
+        run: |
+          ssh -i ~/.ssh/deploy_key -p "${PORT:-18765}" "$USER@$HOST" "cd '$REMOTE' && \
+            (wp plugin is-active bighams-core || wp plugin activate bighams-core) && \
+            (wp theme is-active bighams || true) && \
+            wp rewrite flush && wp cache flush && (wp sg purge 2>/dev/null || true)"

@@ -1,0 +1,7 @@
+/* Block editor styles — keep the editing canvas close to the front end. */
+@import url("https://fonts.googleapis.com/css2?family=Rokkitt:wght@500;700;800&family=Rye&family=Source+Sans+3:wght@400;600;700&display=swap");
+
+body { font-family: "Source Sans 3", system-ui, sans-serif; color: #231c19; background: #f5eee2; }
+h1, h2, h3, h4 { font-family: "Rokkitt", Georgia, serif; font-weight: 800; line-height: 1.05; }
+h2 { text-transform: uppercase; }
+a { color: #7d3032; }
