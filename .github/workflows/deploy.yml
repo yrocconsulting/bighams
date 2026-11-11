@@ -70,8 +70,12 @@ jobs:
             if [ -z "${!v}" ]; then echo "::error::Secret for $v is empty (check SG_SSH_HOST / SG_SSH_USER / SG_REMOTE_PATH)"; exit 1; fi
           done
           case "$REMOTE" in /*) ;; *) echo "::error::SG_REMOTE_PATH must be an absolute path like /home/customer/www/bighams.yroc.host/public_html"; exit 1;; esac
-          ssh -i ~/.ssh/deploy_key -p "${PORT:-18765}" "$USER@$HOST" "test -f '$REMOTE/wp-config.php'" \
-            || { echo "::error::No wp-config.php found at SG_REMOTE_PATH — is WordPress installed there?"; exit 1; }
+          if ! ssh -i ~/.ssh/deploy_key -p "${PORT:-18765}" "$USER@$HOST" "test -f '$REMOTE/wp-config.php' || test -f '$REMOTE/../wp-config.php' || test -d '$REMOTE/wp-content'"; then
+            echo "::error::No WordPress found at SG_REMOTE_PATH. WordPress installs found on this account (use the folder that contains wp-content):"
+            ssh -i ~/.ssh/deploy_key -p "${PORT:-18765}" "$USER@$HOST" \
+              'echo "home: $HOME"; find "$HOME" -maxdepth 5 -type d -name wp-content -not -path "*/wp-content/*" 2>/dev/null | sed "s#/wp-content\$##" | sed "s#^$HOME#~#"'
+            exit 1
+          fi
           SSH="ssh -i ~/.ssh/deploy_key -p ${PORT:-18765} -o StrictHostKeyChecking=yes"
           # --delete is scoped to our own folders only; uploads, other plugins and wp-config are never touched.
           for dir in themes/bighams plugins/bighams-core; do
