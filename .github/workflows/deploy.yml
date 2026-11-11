@@ -95,7 +95,15 @@ jobs:
           USER: ${{ secrets.SG_SSH_USER }}
           PORT: ${{ secrets.SG_SSH_PORT }}
         run: |
-          ssh -i ~/.ssh/deploy_key -p "${PORT:-18765}" "$USER@$HOST" "cd '$WP_ROOT' && \
-            (wp plugin is-active bighams-core || wp plugin activate bighams-core) && \
-            (wp theme is-active bighams || wp theme activate bighams) && \
-            wp rewrite flush && wp cache flush && (wp sg purge 2>/dev/null || true)"
+          ssh -i ~/.ssh/deploy_key -p "${PORT:-18765}" "$USER@$HOST" bash -s -- "$WP_ROOT" <<'REMOTE_SCRIPT'
+          set -e
+          cd "$1"
+          echo "WordPress home: $(wp option get home)"
+          wp plugin activate bighams-core
+          wp theme activate bighams
+          echo "Active theme: $(wp theme list --status=active --field=name)"
+          echo "Active plugins: $(wp plugin list --status=active --field=name | tr '\n' ' ')"
+          wp rewrite flush
+          wp cache flush
+          wp sg purge 2>/dev/null || true
+          REMOTE_SCRIPT
