@@ -41,12 +41,17 @@ jobs:
       - name: Configure SSH
         env:
           SSH_KEY: ${{ secrets.SG_SSH_PRIVATE_KEY }}
+          KEY_PASSPHRASE: ${{ secrets.SG_SSH_KEY_PASSPHRASE }}
           KNOWN_HOSTS: ${{ secrets.SG_SSH_KNOWN_HOSTS }}
           HOST: ${{ secrets.SG_SSH_HOST }}
           PORT: ${{ secrets.SG_SSH_PORT }}
         run: |
           mkdir -p ~/.ssh && chmod 700 ~/.ssh
           printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key && chmod 600 ~/.ssh/deploy_key
+          # Keys generated inside SiteGround have a passphrase: strip it on the runner only.
+          if [ -n "$KEY_PASSPHRASE" ]; then
+            ssh-keygen -p -q -P "$KEY_PASSPHRASE" -N "" -f ~/.ssh/deploy_key
+          fi
           if [ -n "$KNOWN_HOSTS" ]; then
             printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
           else

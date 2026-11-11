@@ -42,6 +42,7 @@ Content and business logic live in the **plugin**, not the theme, so a future re
    | `SG_SSH_USER` | SSH username, e.g. `u123-abc456def` |
    | `SG_SSH_PORT` | `18765` |
    | `SG_SSH_PRIVATE_KEY` | full contents of `bighams_deploy` (private key) |
+   | `SG_SSH_KEY_PASSPHRASE` | *(only if the key has a passphrase, e.g. one generated inside SiteGround)* |
    | `SG_REMOTE_PATH` | `/home/customer/www/bighams.yroc.host/public_html` |
    | `SG_SSH_KNOWN_HOSTS` | *(recommended)* output of `ssh-keyscan -p 18765 <host>` |
 
