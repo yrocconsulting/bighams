@@ -172,7 +172,9 @@ function bht_thumb( $id, $size = 'bh-card', $label = '', $class = '' ) {
  * Logo (custom logo or Rye wordmark).
  */
 function bht_logo( $context = 'header' ) {
-	if ( has_custom_logo() ) {
+	// The uploaded logo is used for Google/AI knowledge panels and the favicon;
+	// the header and footer keep the Rye wordmark unless the Customizer toggle is on.
+	if ( has_custom_logo() && get_theme_mod( 'bh_header_logo', false ) ) {
 		the_custom_logo();
 		return;
 	}

@@ -103,6 +103,7 @@ jobs:
           wp theme activate bighams
           echo "Active theme: $(wp theme list --status=active --field=name)"
           echo "Active plugins: $(wp plugin list --status=active --field=name | tr '\n' ' ')"
+          wp bighams import-images || echo "::warning::Photo import had problems (see above)"
           wp rewrite flush
           wp cache flush
           wp sg purge 2>/dev/null || true

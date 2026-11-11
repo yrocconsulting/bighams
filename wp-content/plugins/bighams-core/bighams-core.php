@@ -32,6 +32,7 @@ require_once BH_CORE_DIR . 'includes/toast/toast-sync.php';
 require_once BH_CORE_DIR . 'includes/admin/settings.php';
 require_once BH_CORE_DIR . 'includes/admin/dashboard.php';
 require_once BH_CORE_DIR . 'includes/seed.php';
+require_once BH_CORE_DIR . 'includes/image-import.php';
 
 register_activation_hook( __FILE__, 'bh_core_activate' );
 register_deactivation_hook( __FILE__, 'bh_core_deactivate' );

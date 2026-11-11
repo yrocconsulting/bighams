@@ -174,6 +174,16 @@ function bh_render_settings_page() {
 			<button class="button" name="tool" value="backfill90">Backfill 90 days</button>
 			<button class="button" name="tool" value="menu">Check menu prices</button>
 		</form>
+		<h2>Photos</h2>
+		<p>Copy Bigham's existing photography from the old SpotHopper site into the Media Library and attach it to menu items, catering packages, locations and homepage sections. Safe to run again: it never replaces a photo you've already set.</p>
+		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<input type="hidden" name="action" value="bh_import_images">
+			<?php wp_nonce_field( 'bh_import_images' ); ?>
+			<button class="button">Import photos from old site</button>
+			<?php if ( get_option( 'bh_images_imported' ) ) : ?>
+				<span class="description">Last run <?php echo esc_html( wp_date( 'M j, Y g:ia', (int) get_option( 'bh_images_imported' ) ) ); ?></span>
+			<?php endif; ?>
+		</form>
 		<h2>AI search files</h2>
 		<p><a href="<?php echo esc_url( home_url( '/llms.txt' ) ); ?>" target="_blank">/llms.txt</a> · <a href="<?php echo esc_url( home_url( '/llms-full.txt' ) ); ?>" target="_blank">/llms-full.txt</a> · <a href="<?php echo esc_url( home_url( '/robots.txt' ) ); ?>" target="_blank">/robots.txt</a> · <a href="<?php echo esc_url( home_url( '/wp-sitemap.xml' ) ); ?>" target="_blank">sitemap</a> · <a href="https://search.google.com/test/rich-results?url=<?php echo rawurlencode( home_url( '/' ) ); ?>" target="_blank">Rich Results Test</a> · <a href="https://validator.schema.org/#url=<?php echo rawurlencode( home_url( '/' ) ); ?>" target="_blank">Schema validator</a></p>
 		<p class="description">These rebuild automatically when you edit menu items, locations, packages or FAQs.</p>
