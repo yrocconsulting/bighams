@@ -48,7 +48,7 @@
 	--ease: cubic-bezier(.2, .7, .2, 1);
 
 	--grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-	--torn: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 40' preserveAspectRatio='none'%3E%3Cpath d='M0 40V18l24 6 30-10 22 8 40-12 26 9 34-7 18 10 44-14 30 11 26-6 38 9 22-12 40 8 28-9 34 12 26-7 42 6 24-10 30 9 36-11 20 8 46-9 26 10 30-6 34 8 24-12 40 10 28-7 36 9 22-8 30 11 44-10 26 7 32-9 24 6V40Z'/%3E%3C/svg%3E");
+	--torn: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1076 40' preserveAspectRatio='none'%3E%3Cpath d='M0 40V18l24 6 30-10 22 8 40-12 26 9 34-7 18 10 44-14 30 11 26-6 38 9 22-12 40 8 28-9 34 12 26-7 42 6 24-10 30 9 36-11 20 8 46-9 26 10 30-6 34 8 24-12 40 10 28-7 36 9 22-8 30 11 44-10 26 7 32-9 24 6V40Z'/%3E%3C/svg%3E");
 }
 
 /* ---------- Reset / base ---------- */
