@@ -69,13 +69,19 @@ jobs:
           for v in HOST USER REMOTE; do
             if [ -z "${!v}" ]; then echo "::error::Secret for $v is empty (check SG_SSH_HOST / SG_SSH_USER / SG_REMOTE_PATH)"; exit 1; fi
           done
-          case "$REMOTE" in /*) ;; *) echo "::error::SG_REMOTE_PATH must be an absolute path like /home/customer/www/bighams.yroc.host/public_html"; exit 1;; esac
-          if ! ssh -i ~/.ssh/deploy_key -p "${PORT:-18765}" "$USER@$HOST" "test -f '$REMOTE/wp-config.php' || test -f '$REMOTE/../wp-config.php' || test -d '$REMOTE/wp-content'"; then
+          # Accept /home/<user>/www/site/public_html, ~/www/site/public_html, /www/site/public_html or www/site/public_html.
+          REL="${REMOTE#\~}"; REL="${REL#/}"
+          RESOLVED=$(ssh -i ~/.ssh/deploy_key -p "${PORT:-18765}" "$USER@$HOST" \
+            "for p in '$REMOTE' \"\$HOME/$REL\"; do if [ -d \"\$p/wp-content\" ]; then cd \"\$p\" && pwd; exit 0; fi; done; exit 1") || RESOLVED=""
+          if [ -z "$RESOLVED" ]; then
             echo "::error::No WordPress found at SG_REMOTE_PATH. WordPress installs found on this account (use the folder that contains wp-content):"
             ssh -i ~/.ssh/deploy_key -p "${PORT:-18765}" "$USER@$HOST" \
-              'echo "home: $HOME"; ls -la "$HOME" "$HOME/www" 2>/dev/null | sed "s/^/  /"; find -L "$HOME" -maxdepth 5 -type d -name wp-content -not -path "*/wp-content/*" 2>/dev/null | sed "s#/wp-content\$##" | sed "s#^$HOME#~#"'
+              'find -L "$HOME/www" -maxdepth 3 -type d -name wp-content 2>/dev/null | sed "s#/wp-content\$##" | sed "s#^$HOME#~#"'
             exit 1
           fi
+          echo "Deploying to WordPress at: $RESOLVED"
+          echo "WP_ROOT=$RESOLVED" >> "$GITHUB_ENV"
+          REMOTE="$RESOLVED"
           SSH="ssh -i ~/.ssh/deploy_key -p ${PORT:-18765} -o StrictHostKeyChecking=yes"
           # --delete is scoped to our own folders only; uploads, other plugins and wp-config are never touched.
           for dir in themes/bighams plugins/bighams-core; do
@@ -88,9 +94,8 @@ jobs:
           HOST: ${{ secrets.SG_SSH_HOST }}
           USER: ${{ secrets.SG_SSH_USER }}
           PORT: ${{ secrets.SG_SSH_PORT }}
-          REMOTE: ${{ secrets.SG_REMOTE_PATH }}
         run: |
-          ssh -i ~/.ssh/deploy_key -p "${PORT:-18765}" "$USER@$HOST" "cd '$REMOTE' && \
+          ssh -i ~/.ssh/deploy_key -p "${PORT:-18765}" "$USER@$HOST" "cd '$WP_ROOT' && \
             (wp plugin is-active bighams-core || wp plugin activate bighams-core) && \
-            (wp theme is-active bighams || true) && \
+            (wp theme is-active bighams || wp theme activate bighams) && \
             wp rewrite flush && wp cache flush && (wp sg purge 2>/dev/null || true)"
