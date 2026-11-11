@@ -57,7 +57,8 @@ $announce_url = bht_setting( 'announcement_url' );
 		</nav>
 
 		<div class="site-header__actions">
-			<a class="site-header__cater" href="<?php echo esc_url( home_url( '/catering/' ) ); ?>"><?php esc_html_e( 'Catering', 'bighams' ); ?></a>
+			<?php $bh_phone = bht_setting( 'phone', '(806) 797-9931' ); ?>
+			<a class="site-header__cater" href="tel:<?php echo esc_attr( preg_replace( '/[^0-9+]/', '', $bh_phone ) ); ?>"><?php echo esc_html( $bh_phone ); ?></a>
 			<button class="btn btn--primary" type="button" data-order-open aria-haspopup="dialog" aria-controls="order-modal">
 				<?php echo bht_icon( 'bag' ); // phpcs:ignore ?><span><?php esc_html_e( 'Order Online', 'bighams' ); ?></span>
 			</button>

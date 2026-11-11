@@ -100,6 +100,107 @@ function bh_image_manifest() {
 }
 
 /**
+ * Photos from Bigham's own professional shoots (Greenhouse Creative 2026,
+ * Tadpole shoot at 19th St, Pop Menu), web-sized and shipped in
+ * import-photos/. These replace old-site photos, never staff-chosen ones.
+ */
+function bh_pro_photo_manifest() {
+	$both = array(
+		'Sliced Brisket'          => 'sliced-brisket.jpg',
+		'Chopped Brisket'         => 'chopped-brisket.jpg',
+		'Turkey Breast'           => 'turkey-breast.jpg',
+		'Pulled Pork'             => 'pulled-pork.jpg',
+		'Original Sausage'        => 'original-sausage.jpg',
+		'Spicy Sausage'           => 'spicy-sausage.jpg',
+		'Pinto Beans'             => 'pinto-beans.jpg',
+		'Potato Salad'            => 'potato-salad.jpg',
+		'Coleslaw'                => 'coleslaw.jpg',
+		'Green Beans'             => 'green-beans.jpg',
+		'Honey Skillet Cornbread' => 'honey-skillet-cornbread.jpg',
+		'Cherry Cobbler'          => 'cherry-cobbler.jpg',
+	);
+	$items = array();
+	foreach ( $both as $title => $file ) {
+		$items[] = array( 'restaurant', $title, $file );
+		$items[] = array( 'catering', $title, $file );
+	}
+	return array(
+		'items' => array_merge(
+			$items,
+			array(
+				array( 'restaurant', 'St. Louis Style Pork Ribs', 'st-louis-pork-ribs.jpg' ),
+				array( 'restaurant', 'Mac & Cheese', 'mac-and-cheese.jpg' ),
+				array( 'catering', 'Mac-N-Cheese', 'mac-and-cheese.jpg' ),
+				array( 'restaurant', 'Baked Potato', 'baked-potato.jpg' ),
+				array( 'restaurant', 'Fried Okra', 'fried-okra.jpg' ),
+				array( 'restaurant', 'Garlic Parm Fries', 'garlic-parm-fries.jpg' ),
+				array( 'restaurant', 'Little Mac Bowl', 'mac-and-cheese-bowl.jpg' ),
+				array( 'restaurant', 'Big Mac Bowl', 'mac-and-cheese-bowl.jpg' ),
+				array( 'catering', 'Seasonal Corn', 'roasted-corn.jpg' ),
+			)
+		),
+		'theme' => array(
+			'bh_hero_image'     => array( 'hero-pitmaster-slicing-brisket.jpg', 'A Bigham\'s pitmaster slicing smoked brisket' ),
+			'bh_about_image'    => array( 'dining-room-19th-street.jpg', 'Guests in the dining room at Bigham\'s Smokehouse on 19th Street, Lubbock' ),
+			'bh_catering_image' => array( 'catering-spread.jpg', 'Bigham\'s BBQ catering spread with stuffed bakers, brisket, sides, cobbler and sweet tea' ),
+		),
+	);
+}
+
+/**
+ * True when an attachment came from the old-site import (safe to upgrade).
+ */
+function bh_is_replaceable_photo( $attachment_id ) {
+	if ( ! $attachment_id ) {
+		return true;
+	}
+	return 0 === strpos( (string) get_post_meta( (int) $attachment_id, '_bh_source_url', true ), 'https://static.spotapps.co/' );
+}
+
+/**
+ * Apply the professional photo set.
+ */
+function bh_import_pro_photos( &$res ) {
+	$m = bh_pro_photo_manifest();
+	foreach ( $m['items'] as $row ) {
+		list( $group, $title, $file ) = $row;
+		$post_id = bh_find_menu_item( $title, $group );
+		if ( ! $post_id ) {
+			$res['errors'][] = "Not found: $title ($group)";
+			continue;
+		}
+		if ( ! bh_is_replaceable_photo( get_post_thumbnail_id( $post_id ) ) ) {
+			$res['skipped']++;
+			continue;
+		}
+		$id = bh_import_media( 'local:' . $file, $title, $title . " at Bigham's Smokehouse, Lubbock TX" );
+		if ( is_wp_error( $id ) ) {
+			$res['errors'][] = "$title: " . $id->get_error_message();
+			continue;
+		}
+		if ( (int) get_post_thumbnail_id( $post_id ) !== $id ) {
+			set_post_thumbnail( $post_id, $id );
+			$res['ok']++;
+		}
+	}
+	foreach ( $m['theme'] as $mod => $row ) {
+		if ( ! bh_is_replaceable_photo( get_theme_mod( $mod ) ) ) {
+			$res['skipped']++;
+			continue;
+		}
+		$id = bh_import_media( 'local:' . $row[0], str_replace( '.jpg', '', $row[0] ), $row[1] );
+		if ( is_wp_error( $id ) ) {
+			$res['errors'][] = "$mod: " . $id->get_error_message();
+			continue;
+		}
+		if ( (int) get_theme_mod( $mod ) !== $id ) {
+			set_theme_mod( $mod, $id );
+			$res['ok']++;
+		}
+	}
+}
+
+/**
  * Download a URL into the Media Library once; returns attachment ID.
  *
  * @return int|WP_Error
@@ -122,7 +223,16 @@ function bh_import_media( $url, $title, $alt = '', $ext = '' ) {
 	require_once ABSPATH . 'wp-admin/includes/media.php';
 	require_once ABSPATH . 'wp-admin/includes/image.php';
 
-	$tmp = download_url( $url, 120 );
+	if ( 0 === strpos( $url, 'local:' ) ) {
+		$src = BH_CORE_DIR . 'import-photos/' . basename( substr( $url, 6 ) );
+		if ( ! file_exists( $src ) ) {
+			return new WP_Error( 'bh_missing', 'Missing file ' . basename( $src ) );
+		}
+		$tmp = wp_tempnam( basename( $src ) );
+		copy( $src, $tmp );
+	} else {
+		$tmp = download_url( $url, 120 );
+	}
 	if ( is_wp_error( $tmp ) ) {
 		return $tmp;
 	}
@@ -188,6 +298,8 @@ function bh_import_images( $with_video = true ) {
 	}
 	$m   = bh_image_manifest();
 	$res = array( 'ok' => 0, 'skipped' => 0, 'errors' => array() );
+
+	bh_import_pro_photos( $res );
 
 	$attach = function ( $post_id, $url, $title, $alt ) use ( &$res ) {
 		if ( ! $post_id ) {
