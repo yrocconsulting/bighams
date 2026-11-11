@@ -66,6 +66,12 @@ jobs:
           PORT: ${{ secrets.SG_SSH_PORT }}
           REMOTE: ${{ secrets.SG_REMOTE_PATH }}
         run: |
+          for v in HOST USER REMOTE; do
+            if [ -z "${!v}" ]; then echo "::error::Secret for $v is empty (check SG_SSH_HOST / SG_SSH_USER / SG_REMOTE_PATH)"; exit 1; fi
+          done
+          case "$REMOTE" in /*) ;; *) echo "::error::SG_REMOTE_PATH must be an absolute path like /home/customer/www/bighams.yroc.host/public_html"; exit 1;; esac
+          ssh -i ~/.ssh/deploy_key -p "${PORT:-18765}" "$USER@$HOST" "test -f '$REMOTE/wp-config.php'" \
+            || { echo "::error::No wp-config.php found at SG_REMOTE_PATH — is WordPress installed there?"; exit 1; }
           SSH="ssh -i ~/.ssh/deploy_key -p ${PORT:-18765} -o StrictHostKeyChecking=yes"
           # --delete is scoped to our own folders only; uploads, other plugins and wp-config are never touched.
           for dir in themes/bighams plugins/bighams-core; do
