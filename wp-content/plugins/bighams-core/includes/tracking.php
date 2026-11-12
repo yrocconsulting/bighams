@@ -86,7 +86,7 @@ add_action( 'rest_api_init', function () {
 } );
 
 add_action( 'wp_enqueue_scripts', function () {
-	wp_enqueue_script( 'bh-track', BH_CORE_URL . 'assets/track.js', array(), BH_CORE_VERSION, array( 'strategy' => 'defer', 'in_footer' => true ) );
+	wp_enqueue_script( 'bh-track', BH_CORE_URL . 'assets/track.js', array(), BH_CORE_VERSION . '.' . filemtime( BH_CORE_DIR . 'assets/track.js' ), array( 'strategy' => 'defer', 'in_footer' => true ) );
 	wp_localize_script( 'bh-track', 'bhTrack', array( 'url' => esc_url_raw( rest_url( 'bighams/v1/track' ) ) ) );
 } );
 

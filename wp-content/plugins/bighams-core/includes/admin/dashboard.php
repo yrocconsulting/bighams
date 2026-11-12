@@ -16,7 +16,7 @@ defined( 'ABSPATH' ) || exit;
 
 add_action( 'admin_enqueue_scripts', function ( $hook ) {
 	if ( false !== strpos( $hook, 'bighams' ) || in_array( get_current_screen()->post_type ?? '', array( 'bh_lead', 'bh_location', 'bh_menu_item' ), true ) || 'index.php' === $hook ) {
-		wp_enqueue_style( 'bh-admin', BH_CORE_URL . 'assets/admin.css', array(), BH_CORE_VERSION );
+		wp_enqueue_style( 'bh-admin', BH_CORE_URL . 'assets/admin.css', array(), BH_CORE_VERSION . '.' . filemtime( BH_CORE_DIR . 'assets/admin.css' ) );
 	}
 } );
 

@@ -13,6 +13,15 @@ define( 'BHT_VERSION', '1.0.0' );
 define( 'BHT_DIR', get_template_directory() );
 define( 'BHT_URI', get_template_directory_uri() );
 
+/**
+ * Cache-busting version for a theme asset: changes whenever the file changes,
+ * so browsers and SiteGround's cache pick up new CSS/JS on every deploy.
+ */
+function bht_asset_ver( $rel ) {
+	$path = BHT_DIR . '/' . ltrim( $rel, '/' );
+	return file_exists( $path ) ? BHT_VERSION . '.' . filemtime( $path ) : BHT_VERSION;
+}
+
 require BHT_DIR . '/inc/template-functions.php';
 require BHT_DIR . '/inc/icons.php';
 require BHT_DIR . '/inc/customizer.php';
@@ -47,8 +56,8 @@ add_action( 'after_setup_theme', function () {
  */
 add_action( 'wp_enqueue_scripts', function () {
 	wp_enqueue_style( 'bh-fonts', bht_fonts_url(), array(), null );
-	wp_enqueue_style( 'bh-main', BHT_URI . '/assets/css/main.css', array(), BHT_VERSION );
-	wp_enqueue_script( 'bh-main', BHT_URI . '/assets/js/main.js', array(), BHT_VERSION, array( 'strategy' => 'defer', 'in_footer' => true ) );
+	wp_enqueue_style( 'bh-main', BHT_URI . '/assets/css/main.css', array(), bht_asset_ver( 'assets/css/main.css' ) );
+	wp_enqueue_script( 'bh-main', BHT_URI . '/assets/js/main.js', array(), bht_asset_ver( 'assets/js/main.js' ), array( 'strategy' => 'defer', 'in_footer' => true ) );
 } );
 
 function bht_fonts_url() {
