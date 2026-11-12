@@ -169,19 +169,41 @@ function bht_thumb( $id, $size = 'bh-card', $label = '', $class = '' ) {
 }
 
 /**
- * Logo (custom logo or Rye wordmark).
+ * Logo: circle badge (uploaded Custom Logo) + Rye wordmark.
+ * Style is set in Customizer → Site Identity → "Header logo style".
  */
 function bht_logo( $context = 'header' ) {
-	// The uploaded logo is used for Google/AI knowledge panels and the favicon;
-	// the header and footer keep the Rye wordmark unless the Customizer toggle is on.
-	if ( has_custom_logo() && get_theme_mod( 'bh_header_logo', false ) ) {
+	$style   = get_theme_mod( 'bh_logo_style', 'both' );
+	$logo_id = (int) get_theme_mod( 'custom_logo' );
+	if ( ! $logo_id ) {
+		$style = 'wordmark';
+	}
+	if ( 'logo' === $style ) {
 		the_custom_logo();
 		return;
 	}
+	$badge = '';
+	if ( 'both' === $style ) {
+		$size  = 'footer' === $context ? 96 : 56;
+		$badge = wp_get_attachment_image(
+			$logo_id,
+			array( $size, $size ),
+			false,
+			array(
+				'class'    => 'wordmark__badge',
+				'alt'      => '',
+				'loading'  => 'header' === $context ? 'eager' : 'lazy',
+				'decoding' => 'async',
+			)
+		);
+	}
 	printf(
-		'<a class="wordmark wordmark--%s" href="%s" rel="home"><span class="wordmark__name">Bigham\'s</span><span class="wordmark__sub">Smokehouse &middot; Est. %s</span></a>',
+		'<a class="wordmark wordmark--%1$s%2$s" href="%3$s" rel="home" aria-label="%4$s">%5$s<span class="wordmark__text"><span class="wordmark__name">Bigham\'s</span><span class="wordmark__sub">Smokehouse &middot; Est. %6$s</span></span></a>',
 		esc_attr( $context ),
+		$badge ? ' wordmark--badge' : '',
 		esc_url( home_url( '/' ) ),
+		esc_attr__( "Bigham's Smokehouse home", 'bighams' ),
+		$badge, // phpcs:ignore WordPress.Security.EscapeOutput -- core image markup.
 		esc_html( bht_setting( 'founded', '1978' ) )
 	);
 }

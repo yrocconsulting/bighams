@@ -182,7 +182,13 @@ input, select, textarea { font: inherit; }
 .site-header__cater { display: none; color: #fff; font-weight: 700; text-decoration: none; font-family: var(--f-head); text-transform: uppercase; letter-spacing: .06em; font-size: 1.0625rem; }
 .site-header__cater:hover { color: var(--c-brass); }
 
-.wordmark { display: inline-flex; flex-direction: column; text-decoration: none; color: #fff; line-height: 1; }
+.wordmark { display: inline-flex; align-items: center; gap: .7rem; text-decoration: none; color: #fff; line-height: 1; }
+.wordmark__text { display: inline-flex; flex-direction: column; }
+.wordmark__badge { width: 48px; height: 48px; border-radius: 50%; flex: none; box-shadow: 0 0 0 2px rgb(255 255 255 / .12), 0 4px 14px -4px rgb(0 0 0 / .6); transition: transform .3s var(--ease); }
+.wordmark:hover .wordmark__badge { transform: rotate(-8deg); }
+.wordmark--footer .wordmark__badge { width: 76px; height: 76px; }
+@media (max-width: 480px) { .wordmark--header .wordmark__badge { width: 40px; height: 40px; } .wordmark--header { gap: .55rem; } }
+@media (prefers-reduced-motion: reduce) { .wordmark:hover .wordmark__badge { transform: none; } }
 .wordmark:hover { color: #fff; }
 .wordmark__name { font-family: var(--f-display); font-size: 1.75rem; letter-spacing: .02em; }
 .wordmark__sub { font-family: var(--f-head); font-weight: 700; font-size: .72rem; letter-spacing: .24em; text-transform: uppercase; color: var(--c-brass); margin-top: .3rem; }
@@ -215,9 +221,10 @@ input, select, textarea { font: inherit; }
 .nav__jobs { color: var(--c-brass); font-weight: 700; }
 body.nav-open { overflow: hidden; }
 
-@media (min-width: 1024px) {
+@media (min-width: 1180px) {
 	.nav-toggle { display: none; }
-	.site-header__cater { display: inline; }
+	.site-header__cater { white-space: nowrap; }
+	.nav__list a { white-space: nowrap; }
 	.site-header__actions .btn { min-height: 46px; padding-inline: 1.25rem; }
 	.nav { position: static; transform: none; opacity: 1; visibility: visible; background: none; padding: 0; overflow: visible; margin-right: var(--sp-4); }
 	.nav__mobile-extra { display: none; }
@@ -725,4 +732,11 @@ body.modal-open { overflow: hidden; }
 	.site-header, .action-bar, .order-modal, .cta-band, .menu-tabs, .announce { display: none !important; }
 	body { background: #fff; padding: 0; }
 	.section--dark, .page-hero { background: #fff; color: #000; }
+}
+
+/* Header fit: phone number only where there is room; tighter nav on small desktops. */
+@media (min-width: 1360px) { .site-header__cater { display: inline; } }
+@media (min-width: 1180px) and (max-width: 1279px) {
+	.nav__list a { padding-inline: .5rem; font-size: 1rem; letter-spacing: .04em; }
+	.wordmark--header .wordmark__badge { width: 42px; height: 42px; }
 }

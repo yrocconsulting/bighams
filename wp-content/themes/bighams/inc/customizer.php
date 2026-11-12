@@ -21,8 +21,18 @@ add_action( 'customize_register', function ( WP_Customize_Manager $wp ) {
 		$wp->add_control( $id, array( 'label' => $def[0], 'section' => $def[2], 'type' => 'bh_hero_subhead' === $id ? 'textarea' : 'text' ) );
 	}
 
-	$wp->add_setting( 'bh_header_logo', array( 'default' => false, 'sanitize_callback' => 'wp_validate_boolean' ) );
-	$wp->add_control( 'bh_header_logo', array( 'label' => 'Show uploaded logo image in header & footer', 'description' => 'Off = the Bigham\'s text wordmark (recommended). The uploaded logo is still used for Google, AI assistants and the browser tab icon.', 'section' => 'title_tagline', 'type' => 'checkbox' ) );
+	$wp->add_setting( 'bh_logo_style', array( 'default' => 'both', 'sanitize_callback' => function ( $v ) { return in_array( $v, array( 'both', 'wordmark', 'logo' ), true ) ? $v : 'both'; } ) );
+	$wp->add_control( 'bh_logo_style', array(
+		'label'       => 'Header & footer logo style',
+		'description' => 'Uses the Logo above for the circle badge. The logo is also used for Google, AI assistants and the browser tab icon.',
+		'section'     => 'title_tagline',
+		'type'        => 'radio',
+		'choices'     => array(
+			'both'     => 'Circle logo + Bigham\'s wordmark (recommended)',
+			'wordmark' => 'Wordmark only',
+			'logo'     => 'Logo image only',
+		),
+	) );
 
 	$wp->add_setting( 'bh_hero_video', array( 'default' => '', 'sanitize_callback' => 'esc_url_raw' ) );
 	$wp->add_control( 'bh_hero_video', array( 'label' => 'Hero video URL (.mp4, muted)', 'description' => 'Upload to Media Library and paste the file URL. Hero image is used as the poster and on slow connections.', 'section' => 'bh_hero', 'type' => 'url' ) );
