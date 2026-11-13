@@ -65,6 +65,8 @@ function bh_settings_sections() {
 			'toast_client_id'     => 'Client ID',
 			'toast_client_secret' => array( 'Client secret', 'password' ),
 			'toast_sync_menu'     => array( 'Check website menu prices against Toast daily', 'checkbox' ),
+			'toast_menu_mode'     => array( 'Website menu source', 'select', array( 'manual' => 'Import from Toast when I click "Import menu now"', 'auto' => 'Sync from Toast automatically every morning' ) ),
+			'toast_menu_location' => 'Toast Restaurant GUID to copy the menu from (blank = first location)',
 		),
 	);
 }
@@ -173,7 +175,30 @@ function bh_render_settings_page() {
 			<button class="button" name="tool" value="backfill30">Backfill 30 days</button>
 			<button class="button" name="tool" value="backfill90">Backfill 90 days</button>
 			<button class="button" name="tool" value="menu">Check menu prices</button>
+			<button class="button" name="tool" value="menu_preview">Preview menu import</button>
+			<button class="button button-primary" name="tool" value="menu_import" onclick="return confirm('Make the website menu match Toast now? Items not on Toast move to Draft (nothing is deleted).');">Import menu now</button>
 		</form>
+		<?php
+		$bh_preview = get_transient( 'bh_toast_menu_preview' );
+		$bh_last    = get_option( 'bh_toast_menu_import' );
+		foreach ( array( 'Menu import preview (nothing changed yet)' => $bh_preview, 'Last menu import' => $bh_last ) as $bh_title => $bh_r ) :
+			if ( ! $bh_r ) {
+				continue;
+			}
+			?>
+			<div class="bh-card" style="margin-top:12px;max-width:900px">
+				<h3><?php echo esc_html( $bh_title ); ?> · <?php echo esc_html( wp_date( 'M j, g:ia', $bh_r['time'] ) ); ?></h3>
+				<p><?php echo esc_html( sprintf( '%d sections · %d to add · %d to update · %d unchanged · %d to move to Draft', $bh_r['sections'], count( $bh_r['added'] ), count( $bh_r['updated'] ), $bh_r['unchanged'], count( $bh_r['drafted'] ) ) ); ?></p>
+				<?php foreach ( array( 'added' => 'New from Toast', 'updated' => 'Changes', 'drafted' => 'Not on Toast — moves to Draft' ) as $bh_k => $bh_label ) : ?>
+					<?php if ( $bh_r[ $bh_k ] ) : ?>
+						<details><summary><strong><?php echo esc_html( $bh_label ); ?></strong> (<?php echo count( $bh_r[ $bh_k ] ); ?>)</summary><ul style="margin-left:18px;list-style:disc">
+						<?php foreach ( $bh_r[ $bh_k ] as $bh_line ) : ?><li><?php echo esc_html( $bh_line ); ?></li><?php endforeach; ?>
+						</ul></details>
+					<?php endif; ?>
+				<?php endforeach; ?>
+			</div>
+		<?php endforeach; ?>
+
 		<h2>Photos</h2>
 		<p>Copy Bigham's existing photography from the old SpotHopper site into the Media Library and attach it to menu items, catering packages, locations and homepage sections. Safe to run again: it never replaces a photo you've already set.</p>
 		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
@@ -224,6 +249,20 @@ add_action( 'admin_post_bh_toast_tool', function () {
 		case 'backfill90':
 			$n   = bh_toast_schedule_backfill( 'backfill90' === $tool ? 90 : 30 );
 			$msg = "Backfill of $n days queued — it runs in the background (about 1 day every 20 seconds while the site gets traffic).";
+			break;
+		case 'menu_preview':
+		case 'menu_import':
+			$r = bh_toast_import_menu( 'menu_preview' === $tool );
+			if ( is_wp_error( $r ) ) {
+				$msg = 'Toast menu: ' . $r->get_error_message();
+				break;
+			}
+			if ( 'menu_preview' === $tool ) {
+				set_transient( 'bh_toast_menu_preview', $r, DAY_IN_SECONDS );
+			} else {
+				delete_transient( 'bh_toast_menu_preview' );
+			}
+			$msg = sprintf( '%sMenu: %d added, %d updated, %d unchanged, %d moved to Draft.', 'menu_preview' === $tool ? 'Preview only — ' : 'Done — ', count( $r['added'] ), count( $r['updated'] ), $r['unchanged'], count( $r['drafted'] ) );
 			break;
 		case 'menu':
 			$r   = bh_toast_check_menu();

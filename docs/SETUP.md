@@ -36,6 +36,8 @@ What's stored: daily totals, item quantities and sales, and orders per hour for 
 > `cd /home/customer/www/bighams.yroc.host/public_html && wp cron event run --due-now >/dev/null 2>&1`
 > Then add `define( 'DISABLE_WP_CRON', true );` to wp-config.php.
 
+**Website menu = Toast menu.** With the credentials in, go to *Bigham's → Settings → Toast tools*. Click **Preview menu import** to see what will be added, repriced or removed, then **Import menu now**. After that the website shows exactly what Toast online ordering shows: the same sections, items, order and prices, with only online-visible items included. Photos, badges, homepage features and longer website descriptions are kept. Items not on Toast move to Draft and are never deleted. Set *Website menu source* to *Sync from Toast automatically every morning* to keep them in step without clicking. The menu is copied from the first location with a GUID unless another Restaurant GUID is set. Toast menus whose name contains "Catering", "Happy Hour" or "Special" feed those sections of the site.
+
 **Toast ordering links** (pickup at each location) are already set. Catering uses Toast Catering & Events: `https://www.toasttab.com/catering/locations/8a09b080-…`. Toast gift card and loyalty links can go in Settings once you have them.
 
 ## 3. Catering leads

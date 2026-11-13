@@ -46,6 +46,8 @@ function bh_default_settings() {
 		'toast_client_id'     => '',
 		'toast_client_secret' => '',
 		'toast_sync_menu'     => '0',
+		'toast_menu_mode'     => 'manual',
+		'toast_menu_location' => '',
 	);
 }
 
