@@ -48,6 +48,8 @@ function bh_default_settings() {
 		'toast_sync_menu'     => '0',
 		'toast_menu_mode'     => 'manual',
 		'toast_menu_location' => '',
+		'toast_hide'          => "Lay's Potato Chips\nOriginal BBQ Sauce\nSpicy BBQ Sauce\nPickles\nJalapenos\nCherry Peppers\nOnions\nCheese\nButter\nSour Cream\nScallions\nBacon\nToast\nLoaf of Bread\nRanch Dressing\nPaper Gift Card\nSecret Menu",
+		'toast_merge'         => "Drinks = 20 oz Drinks, 32 oz Drinks, Kid's Drinks",
 	);
 }
 

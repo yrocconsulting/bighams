@@ -266,21 +266,135 @@ function bh_toast_import_menu( $dry_run = true ) {
 }
 
 /**
+ * Normalise a name for matching: lowercase, straight quotes, single spaces.
+ */
+function bh_toast_norm( $name ) {
+	$name = str_replace( array( "\u{2019}", "\u{2018}", '`', '&#8217;', '&#039;' ), "'", (string) $name );
+	return strtolower( trim( preg_replace( '/\s+/', ' ', html_entity_decode( $name, ENT_QUOTES, 'UTF-8' ) ) ) );
+}
+
+/**
+ * Website display rules applied to the Toast menu (Settings → Toast POS):
+ *  - toast_hide:  Toast sections or items kept in Toast POS but left off the website.
+ *  - toast_merge: "New section = Section A, Section B" combines size-per-section groups
+ *                 (e.g. 20 oz Drinks / 32 oz Drinks) into one section, each item listed once
+ *                 with a price per size.
+ *
+ * @param array $sections From bh_toast_flatten_menus().
+ * @param array $data     Toast response (for prices).
+ * @param array $report   Report, receives 'hidden'.
+ */
+function bh_toast_apply_display_rules( $sections, $data, &$report ) {
+	$hide = array_flip( array_map( 'bh_toast_norm', bh_lines( bh_setting( 'toast_hide' ) ) ) );
+
+	// Parse merge rules.
+	$rules = array();
+	foreach ( bh_lines( bh_setting( 'toast_merge' ) ) as $line ) {
+		if ( false === strpos( $line, '=' ) ) {
+			continue;
+		}
+		list( $target, $sources ) = array_map( 'trim', explode( '=', $line, 2 ) );
+		$sources = array_values( array_filter( array_map( 'trim', explode( ',', $sources ) ) ) );
+		if ( $target && $sources ) {
+			$rules[] = array( 'target' => $target, 'sources' => array_map( 'bh_toast_norm', $sources ) );
+		}
+	}
+
+	$out    = array();
+	$merged = array(); // rule index → position in $out.
+	foreach ( $sections as $sec ) {
+		if ( isset( $hide[ bh_toast_norm( $sec['name'] ) ] ) ) {
+			$report['hidden'][] = $sec['name'] . ' (section, ' . count( $sec['items'] ) . ' items)';
+			continue;
+		}
+		$items = array();
+		foreach ( $sec['items'] as $it ) {
+			if ( isset( $hide[ bh_toast_norm( $it['name'] ) ] ) ) {
+				$report['hidden'][] = $sec['name'] . ' › ' . $it['name'];
+				continue;
+			}
+			$items[] = $it;
+		}
+		if ( ! $items ) {
+			continue;
+		}
+		$sec['items'] = $items;
+
+		// Does this section feed a merge rule?
+		$rule_i = null;
+		foreach ( $rules as $ri => $r ) {
+			if ( in_array( bh_toast_norm( $sec['name'] ), $r['sources'], true ) ) {
+				$rule_i = $ri;
+				break;
+			}
+		}
+		if ( null === $rule_i ) {
+			$out[] = $sec;
+			continue;
+		}
+
+		// Size label = section name minus the target's words ("20 oz Drinks" − "Drinks" → "20 oz").
+		$size = trim( preg_replace( '/\b' . preg_quote( $rules[ $rule_i ]['target'], '/' ) . '\b/i', '', $sec['name'] ) );
+		$size = '' === $size ? $sec['name'] : $size;
+
+		if ( ! isset( $merged[ $rule_i ] ) ) {
+			$out[]             = array(
+				'group'       => $sec['group'],
+				'name'        => $rules[ $rule_i ]['target'],
+				'guid'        => 'merge:' . sanitize_title( $rules[ $rule_i ]['target'] ),
+				'description' => '',
+				'items'       => array(),
+				'_index'      => array(),
+			);
+			$merged[ $rule_i ] = count( $out ) - 1;
+		}
+		$m = &$out[ $merged[ $rule_i ] ];
+		foreach ( $items as $it ) {
+			// Strip the size from the item's name: "20 oz Sweet Tea" → "Sweet Tea", "Kid's Coke" → "Coke".
+			$base = trim( preg_replace( '/^' . preg_quote( bh_toast_norm( $size ), '/' ) . '\s*/i', '', bh_toast_norm( $it['name'] ) ) );
+			$disp = trim( preg_replace( '/^' . str_replace( "'", "['\x{2019}]", preg_quote( $size, '/' ) ) . '\s*/iu', '', trim( $it['name'] ) ) );
+			$disp = '' === $disp ? trim( $it['name'] ) : $disp;
+			$base = '' === $base ? bh_toast_norm( $it['name'] ) : $base;
+			$rows = bh_toast_item_prices( $it, $data );
+			foreach ( $rows as &$row ) {
+				$row['label'] = trim( $size . ( '' !== $row['label'] ? ' ' . $row['label'] : '' ) );
+			}
+			unset( $row );
+			if ( ! isset( $m['_index'][ $base ] ) ) {
+				$m['items'][]           = array(
+					'name'        => $disp,
+					'guid'        => 'merge:' . sanitize_title( $rules[ $rule_i ]['target'] ) . ':' . sanitize_title( $base ),
+					'description' => (string) ( $it['description'] ?? '' ),
+					'_rows'       => array(),
+				);
+				$m['_index'][ $base ] = count( $m['items'] ) - 1;
+			}
+			$k = $m['_index'][ $base ];
+			$m['items'][ $k ]['_rows'] = array_merge( $m['items'][ $k ]['_rows'], $rows );
+		}
+		unset( $m );
+	}
+	return $out;
+}
+
+/**
  * Apply a Toast menus/v2 response to the website menu. Split out so it can be
  * tested with a saved response.
  */
 function bh_apply_toast_menu( $data, $dry_run = true ) {
-	$sections = bh_toast_flatten_menus( $data );
 	$report   = array(
+		'hidden'    => array(),
 		'dry_run'   => $dry_run,
 		'time'      => time(),
-		'sections'  => count( $sections ),
+		'sections'  => 0,
 		'added'     => array(),
 		'updated'   => array(),
 		'unchanged' => 0,
 		'drafted'   => array(),
 		'groups'    => array(),
 	);
+	$sections           = bh_toast_apply_display_rules( bh_toast_flatten_menus( $data ), $data, $report );
+	$report['sections'] = count( $sections );
 	if ( ! $sections ) {
 		return new WP_Error( 'bh_toast_empty', 'Toast returned no menu items visible on online ordering. Nothing was changed.' );
 	}
@@ -290,7 +404,7 @@ function bh_apply_toast_menu( $data, $dry_run = true ) {
 		$tid = bh_toast_menu_section( $sec, ( $si + 1 ) * 10, $dry_run );
 		foreach ( $sec['items'] as $ii => $it ) {
 			$name   = trim( (string) $it['name'] );
-			$prices = bh_price_rows_to_lines( bh_toast_item_prices( $it, $data ) );
+			$prices = bh_price_rows_to_lines( isset( $it['_rows'] ) ? $it['_rows'] : bh_toast_item_prices( $it, $data ) );
 			$desc   = trim( wp_strip_all_tags( (string) ( $it['description'] ?? '' ) ) );
 			$id     = bh_toast_find_item( $it, $sec['group'] );
 			$label  = $sec['name'] . ' › ' . $name;
@@ -337,7 +451,7 @@ function bh_apply_toast_menu( $data, $dry_run = true ) {
 					if ( $tid ) {
 						wp_set_object_terms( $id, array( $tid ), 'bh_menu_section', false );
 					}
-					if ( ! has_post_thumbnail( $id ) && ! empty( $it['image'] ) && is_string( $it['image'] ) && function_exists( 'bh_import_media' ) ) {
+					if ( ! has_post_thumbnail( $id ) && ! empty( $it['image'] ) && empty( $it['_rows'] ) && is_string( $it['image'] ) && function_exists( 'bh_import_media' ) ) {
 						$img = bh_import_media( $it['image'], $name, $name . " at Bigham's Smokehouse, Lubbock TX" );
 						if ( ! is_wp_error( $img ) ) {
 							set_post_thumbnail( $id, $img );
@@ -406,7 +520,7 @@ if ( defined( 'WP_CLI' ) && WP_CLI ) {
 			if ( is_wp_error( $r ) ) {
 				WP_CLI::error( $r->get_error_message() );
 			}
-			foreach ( array( 'added' => 'Add', 'updated' => 'Update', 'drafted' => 'Remove (to Draft)' ) as $k => $label ) {
+			foreach ( array( 'hidden' => 'Hidden on website', 'added' => 'Add', 'updated' => 'Update', 'drafted' => 'Remove (to Draft)' ) as $k => $label ) {
 				foreach ( $r[ $k ] as $line ) {
 					WP_CLI::line( "$label: $line" );
 				}

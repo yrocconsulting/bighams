@@ -9,6 +9,12 @@ on:
       - "wp-content/**"
       - ".github/workflows/deploy.yml"
   workflow_dispatch:
+    inputs:
+      menu_import:
+        description: "Toast menu import after deploy"
+        type: choice
+        options: [none, preview, apply]
+        default: none
 
 concurrency:
   group: deploy-staging
@@ -94,8 +100,9 @@ jobs:
           HOST: ${{ secrets.SG_SSH_HOST }}
           USER: ${{ secrets.SG_SSH_USER }}
           PORT: ${{ secrets.SG_SSH_PORT }}
+          MENU_IMPORT: ${{ github.event.inputs.menu_import || 'none' }}
         run: |
-          ssh -i ~/.ssh/deploy_key -p "${PORT:-18765}" "$USER@$HOST" bash -s -- "$WP_ROOT" <<'REMOTE_SCRIPT'
+          ssh -i ~/.ssh/deploy_key -p "${PORT:-18765}" "$USER@$HOST" bash -s -- "$WP_ROOT" "$MENU_IMPORT" <<'REMOTE_SCRIPT'
           set -e
           cd "$1"
           echo "WordPress home: $(wp option get home)"
@@ -104,6 +111,10 @@ jobs:
           echo "Active theme: $(wp theme list --status=active --field=name)"
           echo "Active plugins: $(wp plugin list --status=active --field=name | tr '\n' ' ')"
           wp bighams import-images || echo "::warning::Photo import had problems (see above)"
+          case "$2" in
+            preview) wp bighams toast-menu --dry-run ;;
+            apply)   wp bighams toast-menu --dry-run && wp bighams toast-menu && wp bighams import-images ;;
+          esac
           wp rewrite flush
           wp cache flush
           wp sg purge 2>/dev/null || true

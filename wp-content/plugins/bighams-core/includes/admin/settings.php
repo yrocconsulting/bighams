@@ -67,6 +67,8 @@ function bh_settings_sections() {
 			'toast_sync_menu'     => array( 'Check website menu prices against Toast daily', 'checkbox' ),
 			'toast_menu_mode'     => array( 'Website menu source', 'select', array( 'manual' => 'Import from Toast when I click "Import menu now"', 'auto' => 'Sync from Toast automatically every morning' ) ),
 			'toast_menu_location' => 'Toast Restaurant GUID to copy the menu from (blank = first location)',
+			'toast_hide'          => array( 'Keep in Toast but hide on the website (one Toast section or item name per line)', 'textarea' ),
+			'toast_merge'         => array( 'Combine sections where the size is the section (one per line: New section = Section A, Section B). Each item shows once, priced by size.', 'textarea' ),
 		),
 	);
 }
@@ -189,7 +191,8 @@ function bh_render_settings_page() {
 			<div class="bh-card" style="margin-top:12px;max-width:900px">
 				<h3><?php echo esc_html( $bh_title ); ?> · <?php echo esc_html( wp_date( 'M j, g:ia', $bh_r['time'] ) ); ?></h3>
 				<p><?php echo esc_html( sprintf( '%d sections · %d to add · %d to update · %d unchanged · %d to move to Draft', $bh_r['sections'], count( $bh_r['added'] ), count( $bh_r['updated'] ), $bh_r['unchanged'], count( $bh_r['drafted'] ) ) ); ?></p>
-				<?php foreach ( array( 'added' => 'New from Toast', 'updated' => 'Changes', 'drafted' => 'Not on Toast — moves to Draft' ) as $bh_k => $bh_label ) : ?>
+				<?php foreach ( array( 'added' => 'New from Toast', 'updated' => 'Changes', 'drafted' => 'Not on Toast or hidden — moves to Draft', 'hidden' => 'Hidden on the website by your list' ) as $bh_k => $bh_label ) : ?>
+					<?php $bh_r[ $bh_k ] = $bh_r[ $bh_k ] ?? array(); ?>
 					<?php if ( $bh_r[ $bh_k ] ) : ?>
 						<details><summary><strong><?php echo esc_html( $bh_label ); ?></strong> (<?php echo count( $bh_r[ $bh_k ] ); ?>)</summary><ul style="margin-left:18px;list-style:disc">
 						<?php foreach ( $bh_r[ $bh_k ] as $bh_line ) : ?><li><?php echo esc_html( $bh_line ); ?></li><?php endforeach; ?>
