@@ -333,37 +333,56 @@ function bh_toast_apply_display_rules( $sections, $data, &$report ) {
 			continue;
 		}
 
-		// Size label = section name minus the target's words ("20 oz Drinks" − "Drinks" → "20 oz").
-		$size = trim( preg_replace( '/\b' . preg_quote( $rules[ $rule_i ]['target'], '/' ) . '\b/i', '', $sec['name'] ) );
-		$size = '' === $size ? $sec['name'] : $size;
+		// Two shapes of "size" in Toast:
+		//  A) size per SECTION: "20 oz Drinks" › "20 oz Sweet Tea"      → Sweet Tea, label "20 oz"
+		//  B) size per ITEM:    "Peach Cobbler" › "Pan of Peach Cobbler" → Peach Cobbler, label "Pan"
+		//  Otherwise (e.g. "Other Sweets") items are kept as they are.
+		$target   = $rules[ $rule_i ]['target'];
+		$sec_size = trim( preg_replace( '/\b' . preg_quote( $target, '/' ) . '\b/i', '', $sec['name'] ) );
+		$shape_a  = '' !== $sec_size && bh_toast_norm( $sec_size ) !== bh_toast_norm( $sec['name'] );
 
 		if ( ! isset( $merged[ $rule_i ] ) ) {
 			$out[]             = array(
 				'group'       => $sec['group'],
-				'name'        => $rules[ $rule_i ]['target'],
-				'guid'        => 'merge:' . sanitize_title( $rules[ $rule_i ]['target'] ),
+				'name'        => $target,
+				'guid'        => 'merge:' . sanitize_title( $target ),
 				'description' => '',
 				'items'       => array(),
 				'_index'      => array(),
 			);
 			$merged[ $rule_i ] = count( $out ) - 1;
 		}
-		$m = &$out[ $merged[ $rule_i ] ];
+		$m        = &$out[ $merged[ $rule_i ] ];
+		$nsec     = bh_toast_norm( $sec['name'] );
 		foreach ( $items as $it ) {
-			// Strip the size from the item's name: "20 oz Sweet Tea" → "Sweet Tea", "Kid's Coke" → "Coke".
-			$base = trim( preg_replace( '/^' . preg_quote( bh_toast_norm( $size ), '/' ) . '\s*/i', '', bh_toast_norm( $it['name'] ) ) );
-			$disp = trim( preg_replace( '/^' . str_replace( "'", "['\x{2019}]", preg_quote( $size, '/' ) ) . '\s*/iu', '', trim( $it['name'] ) ) );
-			$disp = '' === $disp ? trim( $it['name'] ) : $disp;
-			$base = '' === $base ? bh_toast_norm( $it['name'] ) : $base;
+			$nit  = bh_toast_norm( $it['name'] );
+			$name = trim( $it['name'] );
+			if ( $nsec === substr( $nit, -strlen( $nsec ) ) ) {
+				// Shape B: the prefix before the section name is the size ("Pan of" → "Pan").
+				$base  = $nsec;
+				$disp  = trim( $sec['name'] );
+				$size  = trim( mb_substr( $name, 0, mb_strlen( $name ) - mb_strlen( $sec['name'] ) ) );
+				$size  = trim( preg_replace( '/\s+of$/i', '', $size ) );
+			} elseif ( $shape_a ) {
+				$size = $sec_size;
+				$base = trim( preg_replace( '/^' . preg_quote( bh_toast_norm( $size ), '/' ) . '\s*/i', '', $nit ) );
+				$disp = trim( preg_replace( '/^' . str_replace( "'", "['\x{2019}]", preg_quote( $size, '/' ) ) . '\s*/iu', '', $name ) );
+			} else {
+				$size = '';
+				$base = $nit;
+				$disp = $name;
+			}
+			$disp = '' === $disp ? $name : $disp;
+			$base = '' === $base ? $nit : $base;
 			$rows = bh_toast_item_prices( $it, $data );
 			foreach ( $rows as &$row ) {
-				$row['label'] = trim( $size . ( '' !== $row['label'] ? ' ' . $row['label'] : '' ) );
+				$row['label'] = trim( $size . ( '' !== $row['label'] && '' !== $size ? ' ' : '' ) . $row['label'] );
 			}
 			unset( $row );
 			if ( ! isset( $m['_index'][ $base ] ) ) {
 				$m['items'][]           = array(
 					'name'        => $disp,
-					'guid'        => 'merge:' . sanitize_title( $rules[ $rule_i ]['target'] ) . ':' . sanitize_title( $base ),
+					'guid'        => 'merge:' . sanitize_title( $target ) . ':' . sanitize_title( $base ),
 					'description' => (string) ( $it['description'] ?? '' ),
 					'_rows'       => array(),
 				);
@@ -371,6 +390,9 @@ function bh_toast_apply_display_rules( $sections, $data, &$report ) {
 			}
 			$k = $m['_index'][ $base ];
 			$m['items'][ $k ]['_rows'] = array_merge( $m['items'][ $k ]['_rows'], $rows );
+			if ( '' === $m['items'][ $k ]['description'] && ! empty( $it['description'] ) ) {
+				$m['items'][ $k ]['description'] = (string) $it['description'];
+			}
 		}
 		unset( $m );
 	}

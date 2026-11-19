@@ -59,6 +59,21 @@ function bh_core_deactivate() {
  * Run table upgrades when the plugin is updated by deploy (activation hook
  * does not fire on a file-sync deploy).
  */
+/**
+ * One-time settings updates for sites that already saved Settings.
+ */
+add_action( 'init', function () {
+	if ( get_option( 'bh_migr_desserts_merge' ) ) {
+		return;
+	}
+	$opts = get_option( 'bighams_settings' );
+	if ( is_array( $opts ) && isset( $opts['toast_merge'] ) && false === stripos( $opts['toast_merge'], 'Desserts' ) ) {
+		$opts['toast_merge'] = trim( $opts['toast_merge'] . "\nDesserts = Peach Cobbler, Cherry Cobbler, Apple Cobbler, Pecan Cobbler, Blackberry Cobbler, Other Sweets" );
+		update_option( 'bighams_settings', $opts );
+	}
+	update_option( 'bh_migr_desserts_merge', 1, false );
+}, 1 );
+
 add_action( 'plugins_loaded', function () {
 	if ( get_option( 'bh_core_db_version' ) !== BH_CORE_VERSION ) {
 		bh_tracking_install_table();
