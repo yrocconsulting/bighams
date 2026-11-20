@@ -12,26 +12,6 @@
 
 defined( 'ABSPATH' ) || exit;
 
-/**
- * Revenue center GUID → name for a location (cached a day).
- */
-function bh_toast_revenue_centers( BH_Toast_Client $client, $guid ) {
-	$key    = 'bh_toast_rc_' . md5( $guid );
-	$cached = get_transient( $key );
-	if ( is_array( $cached ) ) {
-		return $cached;
-	}
-	$res = $client->get( '/config/v2/revenueCenters', array(), $guid );
-	$map = array();
-	if ( ! is_wp_error( $res ) ) {
-		foreach ( (array) $res as $rc ) {
-			$map[ $rc['guid'] ?? '' ] = (string) ( $rc['name'] ?? '' );
-		}
-	}
-	set_transient( $key, $map, DAY_IN_SECONDS );
-	return $map;
-}
-
 if ( defined( 'WP_CLI' ) && WP_CLI ) {
 	WP_CLI::add_command(
 		'bighams toast-inspect',

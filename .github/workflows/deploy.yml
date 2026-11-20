@@ -15,6 +15,10 @@ on:
         type: choice
         options: [none, preview, apply]
         default: none
+      toast_resync_days:
+        description: "Re-sync this many days of Toast sales + upcoming catering/events (0 = skip)"
+        type: string
+        default: "0"
       toast_inspect:
         description: "Print a read-only Toast order breakdown (no guest data)"
         type: boolean
@@ -106,8 +110,9 @@ jobs:
           PORT: ${{ secrets.SG_SSH_PORT }}
           MENU_IMPORT: ${{ github.event.inputs.menu_import || 'none' }}
           TOAST_INSPECT: ${{ github.event.inputs.toast_inspect || 'false' }}
+          TOAST_RESYNC: ${{ github.event.inputs.toast_resync_days || '0' }}
         run: |
-          ssh -i ~/.ssh/deploy_key -p "${PORT:-18765}" "$USER@$HOST" bash -s -- "$WP_ROOT" "$MENU_IMPORT" "$TOAST_INSPECT" <<'REMOTE_SCRIPT'
+          ssh -i ~/.ssh/deploy_key -p "${PORT:-18765}" "$USER@$HOST" bash -s -- "$WP_ROOT" "$MENU_IMPORT" "$TOAST_INSPECT" "$TOAST_RESYNC" <<'REMOTE_SCRIPT'
           set -e
           cd "$1"
           echo "WordPress home: $(wp option get home)"
@@ -116,6 +121,7 @@ jobs:
           echo "Active theme: $(wp theme list --status=active --field=name)"
           echo "Active plugins: $(wp plugin list --status=active --field=name | tr '\n' ' ')"
           wp bighams import-images || echo "::warning::Photo import had problems (see above)"
+          case "$4" in ''|0|*[!0-9]*) ;; *) wp bighams toast-sync --days="$4" --upcoming=30 ;; esac
           if [ "$3" = "true" ]; then wp bighams toast-inspect --days=60 --ahead=21 || true; fi
           case "$2" in
             preview) wp bighams toast-menu --dry-run ;;

@@ -19,7 +19,9 @@ function bh_toast_tables() {
 	return array(
 		'daily'  => $wpdb->prefix . 'bh_toast_daily',
 		'items'  => $wpdb->prefix . 'bh_toast_items',
-		'hourly' => $wpdb->prefix . 'bh_toast_hourly',
+		'hourly'   => $wpdb->prefix . 'bh_toast_hourly',
+		'channels' => $wpdb->prefix . 'bh_toast_channels',
+		'events'   => $wpdb->prefix . 'bh_toast_events',
 	);
 }
 
@@ -68,6 +70,32 @@ function bh_toast_install_tables() {
 			orders int(10) unsigned NOT NULL DEFAULT 0,
 			sales decimal(12,2) NOT NULL DEFAULT 0,
 			PRIMARY KEY  (day,location_id,hour)
+		) {$c};"
+	);
+	dbDelta(
+		"CREATE TABLE {$t['channels']} (
+			day date NOT NULL,
+			location_id bigint(20) unsigned NOT NULL,
+			channel varchar(20) NOT NULL,
+			orders int(10) unsigned NOT NULL DEFAULT 0,
+			sales decimal(12,2) NOT NULL DEFAULT 0,
+			guests int(10) unsigned NOT NULL DEFAULT 0,
+			PRIMARY KEY  (day,location_id,channel)
+		) {$c};"
+	);
+	dbDelta(
+		"CREATE TABLE {$t['events']} (
+			order_guid varchar(40) NOT NULL,
+			day date NOT NULL,
+			location_id bigint(20) unsigned NOT NULL,
+			kind varchar(20) NOT NULL,
+			service varchar(60) NOT NULL DEFAULT '',
+			guests int(10) unsigned NOT NULL DEFAULT 0,
+			net_sales decimal(12,2) NOT NULL DEFAULT 0,
+			promised_at datetime NULL,
+			synced_at datetime NOT NULL,
+			PRIMARY KEY  (order_guid),
+			KEY day_loc (day,location_id)
 		) {$c};"
 	);
 }
@@ -144,6 +172,8 @@ function bh_toast_sync_location_day( BH_Toast_Client $client, array $loc, DateTi
 	}
 	$dopts = $client->dining_options( $loc['toast_guid'] );
 	$dopts = is_wp_error( $dopts ) ? array() : $dopts;
+	$rcs   = bh_toast_revenue_centers( $client, $loc['toast_guid'] );
+	$event_rows = array();
 
 	$agg = array(
 		'orders' => 0, 'guests' => 0, 'net_sales' => 0.0, 'tax' => 0.0, 'tips' => 0.0, 'discounts' => 0.0,
@@ -192,23 +222,24 @@ function bh_toast_sync_location_day( BH_Toast_Client $client, array $loc, DateTi
 		$agg['guests']    += (int) ( $o['numberOfGuests'] ?? 0 );
 		$agg['net_sales'] += $net;
 
-		$source  = (string) ( $o['source'] ?? 'Unknown' );
 		$dopt    = $dopts[ $o['diningOption']['guid'] ?? '' ] ?? array( 'name' => '', 'behavior' => '' );
-		$channel = $dopt['name'] ?: $source;
+		$cls     = bh_toast_classify( $o, $dopt, $rcs[ $o['revenueCenter']['guid'] ?? '' ] ?? '' );
+		$channel = $cls['channel'];
 		if ( ! isset( $channels[ $channel ] ) ) {
-			$channels[ $channel ] = array( 'orders' => 0, 'sales' => 0 );
+			$channels[ $channel ] = array( 'orders' => 0, 'sales' => 0, 'guests' => 0 );
 		}
 		$channels[ $channel ]['orders']++;
-		$channels[ $channel ]['sales'] += $net;
+		$channels[ $channel ]['sales']  += $net;
+		$channels[ $channel ]['guests'] += (int) ( $o['numberOfGuests'] ?? 0 );
 
-		$is_online = in_array( strtolower( $source ), array( 'online', 'order-and-pay', 'api', 'grubhub', 'uber eats', 'doordash' ), true ) || false !== stripos( $source, 'online' );
-		if ( $is_online ) {
+		if ( in_array( $channel, array( 'online', 'delivery_apps' ), true ) ) {
 			$agg['online_orders']++;
 			$agg['online_sales'] += $net;
 		}
-		if ( false !== stripos( $source . ' ' . $dopt['name'], 'cater' ) || 'invoice' === strtolower( $source ) ) {
+		if ( in_array( $channel, array( 'catering', 'events' ), true ) ) {
 			$agg['catering_orders']++;
 			$agg['catering_sales'] += $net;
+			$event_rows[] = bh_toast_event_row( $o, $cls, $day->format( 'Y-m-d' ), $loc['id'] );
 		}
 
 		$opened = $o['openedDate'] ?? ( $o['createdDate'] ?? '' );
@@ -245,6 +276,11 @@ function bh_toast_sync_location_day( BH_Toast_Client $client, array $loc, DateTi
 	foreach ( $items as $k => $it ) {
 		$wpdb->insert( $t['items'], array( 'day' => $ymd, 'location_id' => $lid, 'item_key' => $k, 'item_name' => substr( $it['name'], 0, 191 ), 'qty' => $it['qty'], 'sales' => $it['sales'] ) );
 	}
+	$wpdb->delete( $t['channels'], array( 'day' => $ymd, 'location_id' => $lid ) );
+	foreach ( $channels as $ch => $v ) {
+		$wpdb->insert( $t['channels'], array( 'day' => $ymd, 'location_id' => $lid, 'channel' => $ch, 'orders' => $v['orders'], 'sales' => round( $v['sales'], 2 ), 'guests' => $v['guests'] ) );
+	}
+	bh_toast_store_events( $lid, $ymd, $event_rows );
 	$wpdb->delete( $t['hourly'], array( 'day' => $ymd, 'location_id' => $lid ) );
 	foreach ( $hourly as $h => $v ) {
 		$wpdb->insert( $t['hourly'], array( 'day' => $ymd, 'location_id' => $lid, 'hour' => $h, 'orders' => $v['orders'], 'sales' => $v['sales'] ) );

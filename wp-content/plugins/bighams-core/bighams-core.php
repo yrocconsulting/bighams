@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Bigham's Core
  * Description:       Locations, menu, catering, structured data (SEO + AI search), Toast POS sync and the Bigham's business dashboard. Pairs with the Bigham's theme.
- * Version:           1.0.0
+ * Version:           1.1.0
  * Requires at least: 6.4
  * Requires PHP:      8.0
  * Author:            Yroc Consulting
@@ -14,7 +14,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'BH_CORE_VERSION', '1.0.0' );
+define( 'BH_CORE_VERSION', '1.1.0' );
 define( 'BH_CORE_FILE', __FILE__ );
 define( 'BH_CORE_DIR', plugin_dir_path( __FILE__ ) );
 define( 'BH_CORE_URL', plugin_dir_url( __FILE__ ) );
@@ -29,6 +29,7 @@ require_once BH_CORE_DIR . 'includes/catering-form.php';
 require_once BH_CORE_DIR . 'includes/tracking.php';
 require_once BH_CORE_DIR . 'includes/toast/class-toast-client.php';
 require_once BH_CORE_DIR . 'includes/toast/toast-sync.php';
+require_once BH_CORE_DIR . 'includes/toast/toast-channels.php';
 require_once BH_CORE_DIR . 'includes/toast/toast-menu.php';
 require_once BH_CORE_DIR . 'includes/toast/toast-inspect.php';
 require_once BH_CORE_DIR . 'includes/admin/settings.php';

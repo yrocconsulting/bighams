@@ -95,8 +95,8 @@ function bh_dash_sales( $has_toast, $from, $to, $prev_from, $prev_to, $locs, $co
 		array( 'Net sales', bh_money( $now['net_sales'] ), bh_delta_html( $now['net_sales'], $prev['net_sales'] ) ),
 		array( 'Orders', number_format( $now['orders'] ), bh_delta_html( $now['orders'], $prev['orders'] ) ),
 		array( 'Average ticket', bh_money( $now['avg_ticket'] ), bh_delta_html( $now['avg_ticket'], $prev['avg_ticket'] ) ),
-		array( 'Online orders', number_format( $now['online_pct'], 1 ) . '%', number_format( $now['online_orders'] ) . ' orders · ' . bh_money( $now['online_sales'] ) ),
-		array( 'Catering (Toast)', bh_money( $now['catering_sales'] ), number_format( $now['catering_orders'] ) . ' orders · ' . bh_delta_html( $now['catering_sales'], $prev['catering_sales'] ) ),
+		array( 'Online & delivery apps', number_format( $now['online_pct'], 1 ) . '%', number_format( $now['online_orders'] ) . ' orders · ' . bh_money( $now['online_sales'] ) ),
+		array( 'Catering & events', bh_money( $now['catering_sales'] ), number_format( $now['catering_orders'] ) . ' orders · ' . bh_delta_html( $now['catering_sales'], $prev['catering_sales'] ) ),
 	);
 	bh_dash_tiles( $tiles );
 
@@ -143,11 +143,15 @@ function bh_dash_sales( $has_toast, $from, $to, $prev_from, $prev_to, $locs, $co
 	echo '</tbody></table></div>';
 
 	// Channels.
-	echo '<div class="bh-card"><h3>How guests order</h3><table class="bh-table"><thead><tr><th>Channel / dining option</th><th class="num">Orders</th><th class="num">Sales</th><th class="num">Share</th></tr></thead><tbody>';
-	$ch    = bh_toast_channels( $from, $to );
-	$total = array_sum( array_map( fn( $c ) => $c['sales'], $ch ) );
-	foreach ( array_slice( $ch, 0, 10, true ) as $name => $c ) {
-		printf( '<tr><td>%s</td><td class="num">%s</td><td class="num">%s</td><td class="num">%s%%</td></tr>', esc_html( $name ), esc_html( number_format( $c['orders'] ) ), esc_html( bh_money( $c['sales'] ) ), esc_html( $total ? number_format( 100 * $c['sales'] / $total, 1 ) : '0' ) );
+	echo '<div class="bh-card"><h3>How guests order</h3><table class="bh-table"><thead><tr><th>Channel</th><th class="num">Orders</th><th class="num">Sales</th><th class="num">Avg</th><th class="num">Share</th></tr></thead><tbody>';
+	$ch     = function_exists( 'bh_toast_channel_totals' ) ? bh_toast_channel_totals( $from, $to ) : array();
+	$labels = function_exists( 'bh_toast_channel_labels' ) ? bh_toast_channel_labels() : array();
+	$total  = array_sum( array_column( $ch, 'sales' ) );
+	foreach ( $ch as $key => $c ) {
+		printf( '<tr><td>%s</td><td class="num">%s</td><td class="num">%s</td><td class="num">%s</td><td class="num">%s%%</td></tr>', esc_html( $labels[ $key ] ?? $key ), esc_html( number_format( $c['orders'] ) ), esc_html( bh_money( $c['sales'] ) ), esc_html( $c['orders'] ? bh_money( $c['sales'] / $c['orders'] ) : '—' ), esc_html( $total ? number_format( 100 * $c['sales'] / $total, 1 ) : '0' ) );
+	}
+	if ( ! $ch ) {
+		echo '<tr><td colspan="5" class="bh-muted">Appears after the next Toast sync.</td></tr>';
 	}
 	echo '</tbody></table></div>';
 
@@ -282,18 +286,7 @@ function bh_leads_between( $from, $to ) {
 
 function bh_dash_catering( $from, $to, $prev_from, $prev_to ) {
 	if ( 'toast' === bh_setting( 'inquiry_mode', 'toast' ) ) {
-		$now  = bh_tracking_totals( $from, $to );
-		$prev = bh_tracking_totals( $prev_from, $prev_to );
-		echo '<h2 class="bh-h2">Catering & events <small>requests go to Toast Catering & Events</small></h2>';
-		bh_dash_tiles(
-			array(
-				array( 'Catering requests started', number_format( $now['lead_catering'] ), bh_delta_html( $now['lead_catering'], $prev['lead_catering'] ) ),
-				array( 'Party requests started', number_format( $now['lead_party'] ), bh_delta_html( $now['lead_party'], $prev['lead_party'] ) ),
-				array( 'Catering order clicks', number_format( $now['catering_order'] ), bh_delta_html( $now['catering_order'], $prev['catering_order'] ) ),
-				array( 'Catering sales (Toast)', bh_toast_has_data() ? bh_money( bh_toast_totals( $from, $to )['catering_sales'] ) : '—', 'from synced Toast orders' ),
-			)
-		);
-		echo '<p class="bh-muted">Counts are clicks from the website into Toast\'s inquiry and catering ordering pages. Review and quote the requests themselves in <strong>Toast Web → Catering &amp; Events</strong>.</p>';
+		bh_dash_catering_toast( $from, $to, $prev_from, $prev_to );
 		return;
 	}
 	$leads = bh_leads_between( $from, $to );
@@ -369,6 +362,120 @@ function bh_dash_catering( $from, $to, $prev_from, $prev_to ) {
 		echo '</tbody></table>';
 	}
 	echo '</div></div>';
+}
+
+/**
+ * Catering & events from Toast: sales, headcount, by location, by type,
+ * and what is already booked for the coming weeks.
+ */
+function bh_dash_catering_toast( $from, $to, $prev_from, $prev_to ) {
+	echo '<h2 class="bh-h2">Catering &amp; events <small>from Toast Catering &amp; Events orders</small></h2>';
+	if ( ! function_exists( 'bh_toast_has_channel_data' ) || ! bh_toast_has_channel_data() ) {
+		echo '<div class="bh-card bh-card--setup"><p>Catering and event numbers appear after the next Toast sync. To fill in history now, run <em>Backfill 90 days</em> in Settings.</p></div>';
+		return;
+	}
+	$now  = bh_toast_channel_totals( $from, $to );
+	$prev = bh_toast_channel_totals( $prev_from, $prev_to );
+	$z    = array( 'orders' => 0, 'sales' => 0, 'guests' => 0 );
+	$cat  = $now['catering'] ?? $z;
+	$ev   = $now['events'] ?? $z;
+	$pcat = $prev['catering'] ?? $z;
+	$pev  = $prev['events'] ?? $z;
+	$all  = array_sum( array_column( $now, 'sales' ) );
+
+	bh_dash_tiles(
+		array(
+			array( 'Catering sales', bh_money( $cat['sales'] ), bh_delta_html( $cat['sales'], $pcat['sales'] ) ),
+			array( 'Catering orders', number_format( $cat['orders'] ), bh_delta_html( $cat['orders'], $pcat['orders'] ) ),
+			array( 'Guests catered', number_format( $cat['guests'] ), 'headcount entered in Toast' ),
+			array( 'Average catering order', $cat['orders'] ? bh_money( $cat['sales'] / $cat['orders'] ) : '—', $all ? number_format( 100 * $cat['sales'] / $all, 1 ) . '% of all sales' : '' ),
+			array( 'Events & parties', bh_money( $ev['sales'] ), number_format( $ev['orders'] ) . ' events · ' . bh_delta_html( $ev['sales'], $pev['sales'] ) ),
+		)
+	);
+
+	echo '<div class="bh-grid bh-grid--2">';
+
+	// By location.
+	echo '<div class="bh-card"><h3>By location</h3><table class="bh-table"><thead><tr><th>Location</th><th class="num">Catering orders</th><th class="num">Guests</th><th class="num">Catering sales</th><th class="num">Events</th><th class="num">Event sales</th></tr></thead><tbody>';
+	foreach ( bh_get_locations() as $l ) {
+		$c = bh_toast_channel_totals( $from, $to, $l['id'] );
+		$a = $c['catering'] ?? $z;
+		$e = $c['events'] ?? $z;
+		printf( '<tr><td>%s</td><td class="num">%s</td><td class="num">%s</td><td class="num">%s</td><td class="num">%s</td><td class="num">%s</td></tr>', esc_html( $l['short_name'] ), esc_html( number_format( $a['orders'] ) ), esc_html( number_format( $a['guests'] ) ), esc_html( bh_money( $a['sales'] ) ), esc_html( number_format( $e['orders'] ) ), esc_html( bh_money( $e['sales'] ) ) );
+	}
+	echo '</tbody></table></div>';
+
+	// By type.
+	$types = array();
+	foreach ( bh_toast_event_orders( $from, $to ) as $r ) {
+		$k = $r['service'];
+		if ( ! isset( $types[ $k ] ) ) {
+			$types[ $k ] = array( 'orders' => 0, 'guests' => 0, 'sales' => 0 );
+		}
+		$types[ $k ]['orders']++;
+		$types[ $k ]['guests'] += (int) $r['guests'];
+		$types[ $k ]['sales']  += (float) $r['net_sales'];
+	}
+	uasort( $types, fn( $x, $y ) => $y['sales'] <=> $x['sales'] );
+	$tsum = array_sum( array_column( $types, 'sales' ) );
+	echo '<div class="bh-card"><h3>By type</h3>';
+	if ( ! $types ) {
+		echo '<p class="bh-muted">No catering or event orders in this period.</p>';
+	} else {
+		echo '<table class="bh-table"><thead><tr><th>Type</th><th class="num">Orders</th><th class="num">Guests</th><th class="num">Sales</th><th class="num">Share</th></tr></thead><tbody>';
+		foreach ( $types as $k => $v ) {
+			printf( '<tr><td>%s</td><td class="num">%s</td><td class="num">%s</td><td class="num">%s</td><td class="num">%s%%</td></tr>', esc_html( $k ), esc_html( number_format( $v['orders'] ) ), esc_html( number_format( $v['guests'] ) ), esc_html( bh_money( $v['sales'] ) ), esc_html( $tsum ? number_format( 100 * $v['sales'] / $tsum, 0 ) : '0' ) );
+		}
+		echo '</tbody></table>';
+	}
+	echo '</div></div>';
+
+	// Upcoming.
+	$up   = bh_toast_event_orders( bh_now()->format( 'Y-m-d' ), bh_now()->modify( '+21 days' )->format( 'Y-m-d' ) );
+	$locs = array();
+	foreach ( bh_get_locations() as $l ) {
+		$locs[ $l['id'] ] = $l['short_name'];
+	}
+	echo '<div class="bh-card"><h3>Booked in Toast — next 3 weeks <small>catering &amp; events already on the calendar';
+	$synced = get_option( 'bh_toast_upcoming_sync' );
+	if ( $synced ) {
+		echo ' · updated ' . esc_html( human_time_diff( (int) $synced ) ) . ' ago';
+	}
+	echo '</small></h3>';
+	if ( ! $up ) {
+		echo '<p class="bh-muted">Nothing booked yet for the next 3 weeks.</p>';
+	} else {
+		$g = array_sum( array_column( $up, 'guests' ) );
+		$v = array_sum( array_map( 'floatval', array_column( $up, 'net_sales' ) ) );
+		printf( '<p><strong>%d</strong> orders · <strong>%s</strong> guests · <strong>%s</strong> booked</p>', count( $up ), esc_html( number_format( $g ) ), esc_html( bh_money( $v ) ) );
+		echo '<table class="bh-table"><thead><tr><th>Date</th><th>Time</th><th>Location</th><th>Type</th><th class="num">Guests</th><th class="num">Amount</th></tr></thead><tbody>';
+		foreach ( $up as $r ) {
+			printf(
+				'<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td class="num">%s</td><td class="num">%s</td></tr>',
+				esc_html( wp_date( 'D M j', strtotime( $r['day'] ) ) ),
+				esc_html( $r['promised_at'] ? wp_date( 'g:ia', strtotime( $r['promised_at'] ) ) : '—' ),
+				esc_html( $locs[ (int) $r['location_id'] ] ?? '' ),
+				esc_html( $r['service'] ),
+				esc_html( number_format( (int) $r['guests'] ) ),
+				esc_html( bh_money( $r['net_sales'] ) )
+			);
+		}
+		echo '</tbody></table><p class="bh-muted">Customer names and contact details stay in Toast Web → Catering &amp; Events.</p>';
+	}
+	echo '</div>';
+
+	// Website requests feeding Toast.
+	$w  = bh_tracking_totals( $from, $to );
+	$wp = bh_tracking_totals( $prev_from, $prev_to );
+	printf(
+		'<p class="bh-muted"><strong>From the website:</strong> %s catering requests started (%s) · %s party requests started (%s) · %s "order catering online" clicks (%s)</p>',
+		esc_html( number_format( $w['lead_catering'] ) ),
+		wp_kses_post( bh_delta_html( $w['lead_catering'], $wp['lead_catering'] ) ),
+		esc_html( number_format( $w['lead_party'] ) ),
+		wp_kses_post( bh_delta_html( $w['lead_party'], $wp['lead_party'] ) ),
+		esc_html( number_format( $w['catering_order'] ) ),
+		wp_kses_post( bh_delta_html( $w['catering_order'], $wp['catering_order'] ) )
+	);
 }
 
 /* -------------------------------------------------------------- Website */
