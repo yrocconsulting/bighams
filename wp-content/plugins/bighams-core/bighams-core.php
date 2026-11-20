@@ -30,6 +30,7 @@ require_once BH_CORE_DIR . 'includes/tracking.php';
 require_once BH_CORE_DIR . 'includes/toast/class-toast-client.php';
 require_once BH_CORE_DIR . 'includes/toast/toast-sync.php';
 require_once BH_CORE_DIR . 'includes/toast/toast-menu.php';
+require_once BH_CORE_DIR . 'includes/toast/toast-inspect.php';
 require_once BH_CORE_DIR . 'includes/admin/settings.php';
 require_once BH_CORE_DIR . 'includes/admin/dashboard.php';
 require_once BH_CORE_DIR . 'includes/seed.php';

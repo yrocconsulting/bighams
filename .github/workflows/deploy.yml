@@ -15,6 +15,10 @@ on:
         type: choice
         options: [none, preview, apply]
         default: none
+      toast_inspect:
+        description: "Print a read-only Toast order breakdown (no guest data)"
+        type: boolean
+        default: false
 
 concurrency:
   group: deploy-staging
@@ -101,8 +105,9 @@ jobs:
           USER: ${{ secrets.SG_SSH_USER }}
           PORT: ${{ secrets.SG_SSH_PORT }}
           MENU_IMPORT: ${{ github.event.inputs.menu_import || 'none' }}
+          TOAST_INSPECT: ${{ github.event.inputs.toast_inspect || 'false' }}
         run: |
-          ssh -i ~/.ssh/deploy_key -p "${PORT:-18765}" "$USER@$HOST" bash -s -- "$WP_ROOT" "$MENU_IMPORT" <<'REMOTE_SCRIPT'
+          ssh -i ~/.ssh/deploy_key -p "${PORT:-18765}" "$USER@$HOST" bash -s -- "$WP_ROOT" "$MENU_IMPORT" "$TOAST_INSPECT" <<'REMOTE_SCRIPT'
           set -e
           cd "$1"
           echo "WordPress home: $(wp option get home)"
@@ -111,6 +116,7 @@ jobs:
           echo "Active theme: $(wp theme list --status=active --field=name)"
           echo "Active plugins: $(wp plugin list --status=active --field=name | tr '\n' ' ')"
           wp bighams import-images || echo "::warning::Photo import had problems (see above)"
+          if [ "$3" = "true" ]; then wp bighams toast-inspect --days=60 --ahead=21 || true; fi
           case "$2" in
             preview) wp bighams toast-menu --dry-run ;;
             apply)   wp bighams toast-menu --dry-run && wp bighams toast-menu && wp bighams import-images ;;
