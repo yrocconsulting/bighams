@@ -55,6 +55,9 @@ function bh_service_styles() {
  */
 function bh_catering_form( $args = array() ) {
 	$args  = wp_parse_args( $args, array( 'type' => 'catering', 'id' => 'inquiry' ) );
+	if ( 'toast' === bh_setting( 'inquiry_mode', 'toast' ) ) {
+		return bh_toast_inquiry_card( $args );
+	}
 	$party = 'party' === $args['type'];
 	$sent  = isset( $_GET['inquiry'] ) && 'sent' === $_GET['inquiry']; // phpcs:ignore WordPress.Security.NonceVerification
 	$err   = isset( $_GET['inquiry'] ) && 'error' === $_GET['inquiry']; // phpcs:ignore WordPress.Security.NonceVerification
@@ -117,6 +120,41 @@ function bh_catering_form( $args = array() ) {
 		<p class="bh-form__fine">Catering orders need 24 hours notice; 200+ guests or a full restaurant buyout need 7 days.</p>
 		<button class="btn btn--primary btn--lg" type="submit"><?php echo $party ? 'Request my party' : 'Get my catering quote'; ?></button>
 	</form>
+	<?php
+	return ob_get_clean();
+}
+
+/**
+ * Catering / party requests handled by Toast Catering & Events: the request
+ * button opens Bigham's Toast inquiry form, so every lead lands in Toast
+ * where the team quotes, invoices and schedules it.
+ */
+function bh_toast_inquiry_card( $args ) {
+	$party = 'party' === $args['type'];
+	$url   = $party ? bh_setting( 'party_inquiry_url' ) : bh_setting( 'catering_inquiry_url' );
+	$event = $party ? 'lead_party' : 'lead_catering';
+	ob_start();
+	?>
+	<div class="bh-form bh-form--toast" id="<?php echo esc_attr( $args['id'] ); ?>">
+		<p class="bh-form__lead"><?php echo $party ? esc_html__( 'Tell us the date, guest count and which dining room you\'d like. Our events team will confirm availability and send your menu and pricing.', 'bighams' ) : esc_html__( 'Tell us your date, guest count and service style. Our catering team will send a quote and handle everything from there, usually within one business day.', 'bighams' ); ?></p>
+		<ul class="checklist">
+			<?php if ( $party ) : ?>
+				<li><?php esc_html_e( 'Private dining room at 82nd St for up to 20 guests', 'bighams' ); ?></li>
+				<li><?php esc_html_e( 'Full dining room buyouts with 7 days notice', 'bighams' ); ?></li>
+			<?php else : ?>
+				<li><?php esc_html_e( 'Pickup, delivery, or catered & served', 'bighams' ); ?></li>
+				<li><?php esc_html_e( '24 hours notice; 7 days for 200+ guests', 'bighams' ); ?></li>
+			<?php endif; ?>
+			<li><?php esc_html_e( 'Quote, invoice and payment handled securely through Toast', 'bighams' ); ?></li>
+		</ul>
+		<p class="bh-form__actions">
+			<a class="btn btn--primary btn--lg" href="<?php echo esc_url( $url ); ?>" target="_blank" rel="noopener"<?php echo bh_track_attrs( $event ); // phpcs:ignore WordPress.Security.EscapeOutput ?>><?php echo $party ? esc_html__( 'Request your party', 'bighams' ) : esc_html__( 'Start your catering request', 'bighams' ); ?><span class="screen-reader-text"> <?php esc_html_e( '(opens Toast in a new tab)', 'bighams' ); ?></span></a>
+			<?php if ( ! $party && bh_setting( 'catering_order_url' ) ) : ?>
+				<a class="btn btn--outline btn--lg" href="<?php echo esc_url( bh_setting( 'catering_order_url' ) ); ?>" target="_blank" rel="noopener"<?php echo bh_track_attrs( 'catering_order' ); // phpcs:ignore WordPress.Security.EscapeOutput ?>><?php esc_html_e( 'Order catering online', 'bighams' ); ?></a>
+			<?php endif; ?>
+		</p>
+		<p class="bh-form__fine"><?php esc_html_e( 'The request form opens on Toast, where our team receives it right away.', 'bighams' ); ?></p>
+	</div>
 	<?php
 	return ob_get_clean();
 }

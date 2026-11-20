@@ -74,6 +74,20 @@ add_action( 'init', function () {
 	update_option( 'bh_migr_desserts_merge', 1, false );
 }, 1 );
 
+add_action( 'init', function () {
+	if ( get_option( 'bh_migr_toast_inquiry' ) ) {
+		return;
+	}
+	$anchors = array( '82nd-street' => '#82nd-st-indiana', '19th-street-quaker' => '#19th-st-quaker', 'milwaukee-avenue' => '#50th-milwaukee' );
+	foreach ( $anchors as $slug => $hash ) {
+		$loc = get_page_by_path( $slug, OBJECT, 'bh_location' );
+		if ( $loc && ! get_post_meta( $loc->ID, '_bh_catering_url', true ) ) {
+			update_post_meta( $loc->ID, '_bh_catering_url', 'https://www.toasttab.com/catering/locations/8a09b080-324a-4a97-b7d3-14270d2c8f55' . $hash );
+		}
+	}
+	update_option( 'bh_migr_toast_inquiry', 1, false );
+}, 2 );
+
 add_action( 'plugins_loaded', function () {
 	if ( get_option( 'bh_core_db_version' ) !== BH_CORE_VERSION ) {
 		bh_tracking_install_table();

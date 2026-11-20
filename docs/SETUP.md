@@ -42,6 +42,11 @@ What's stored: daily totals, item quantities and sales, and orders per hour for 
 
 ## 3. Catering leads
 
+**Default: requests go to Toast.** Every "request a quote" and "request your party" button opens Bigham's Toast Catering & Events inquiry form, so leads land in **Toast Web → Catering & Events**, where the team quotes, invoices and schedules them. The form URLs are in *Bigham's → Settings → Catering & Events*, and each location's *Order catering online* link goes to its Toast catering page. The dashboard counts the requests started and catering order clicks from the website. Catering revenue comes from the synced Toast orders. Toast's API is read-only for this connection and doesn't let a website create leads, which is why requests go through Toast's hosted form.
+
+The website's own form (below) is still there. Set *Where catering & party requests go* to *Website form* to use it instead.
+
+
 - The website quote form saves each inquiry under *Bigham's → Catering Leads* and emails the addresses in *Settings → Send new inquiry alerts to*.
 - Update **Status** and **Quoted / booked value** on each lead. These feed the dashboard pipeline, booked revenue and close rate.
 - To send leads to GoHighLevel, create an *Inbound Webhook* trigger in a GHL workflow and paste its URL into *Settings → CRM webhook URL*. Every inquiry is POSTed there as JSON.

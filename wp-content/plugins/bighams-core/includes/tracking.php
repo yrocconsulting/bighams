@@ -36,8 +36,8 @@ function bh_track_events() {
 		'call'           => 'Call clicks',
 		'directions'     => 'Directions clicks',
 		'delivery'       => 'Delivery app clicks',
-		'lead_catering'  => 'Catering inquiries',
-		'lead_party'     => 'Private event inquiries',
+		'lead_catering'  => 'Catering requests',
+		'lead_party'     => 'Private event requests',
 		'menu_view'      => 'Menu views',
 	);
 }

@@ -281,6 +281,21 @@ function bh_leads_between( $from, $to ) {
 }
 
 function bh_dash_catering( $from, $to, $prev_from, $prev_to ) {
+	if ( 'toast' === bh_setting( 'inquiry_mode', 'toast' ) ) {
+		$now  = bh_tracking_totals( $from, $to );
+		$prev = bh_tracking_totals( $prev_from, $prev_to );
+		echo '<h2 class="bh-h2">Catering & events <small>requests go to Toast Catering & Events</small></h2>';
+		bh_dash_tiles(
+			array(
+				array( 'Catering requests started', number_format( $now['lead_catering'] ), bh_delta_html( $now['lead_catering'], $prev['lead_catering'] ) ),
+				array( 'Party requests started', number_format( $now['lead_party'] ), bh_delta_html( $now['lead_party'], $prev['lead_party'] ) ),
+				array( 'Catering order clicks', number_format( $now['catering_order'] ), bh_delta_html( $now['catering_order'], $prev['catering_order'] ) ),
+				array( 'Catering sales (Toast)', bh_toast_has_data() ? bh_money( bh_toast_totals( $from, $to )['catering_sales'] ) : '—', 'from synced Toast orders' ),
+			)
+		);
+		echo '<p class="bh-muted">Counts are clicks from the website into Toast\'s inquiry and catering ordering pages. Review and quote the requests themselves in <strong>Toast Web → Catering &amp; Events</strong>.</p>';
+		return;
+	}
 	$leads = bh_leads_between( $from, $to );
 	$prev  = bh_leads_between( $prev_from, $prev_to );
 	$by    = array_fill_keys( array_keys( bh_lead_statuses() ), 0 );
