@@ -166,7 +166,7 @@ function bh_import_pro_photos( &$res ) {
 		list( $group, $title, $file ) = $row;
 		$post_id = bh_find_menu_item( $title, $group );
 		if ( ! $post_id ) {
-			$res['errors'][] = "Not found: $title ($group)";
+			$res['skipped']++;
 			continue;
 		}
 		if ( ! bh_is_replaceable_photo( get_post_thumbnail_id( $post_id ) ) ) {
@@ -303,7 +303,8 @@ function bh_import_images( $with_video = true ) {
 
 	$attach = function ( $post_id, $url, $title, $alt ) use ( &$res ) {
 		if ( ! $post_id ) {
-			$res['errors'][] = "Not found: $title";
+			// Item no longer on the menu (e.g. replaced by the Toast menu import): nothing to attach.
+			$res['skipped']++;
 			return;
 		}
 		if ( has_post_thumbnail( $post_id ) ) {
