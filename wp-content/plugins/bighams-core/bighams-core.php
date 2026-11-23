@@ -36,6 +36,8 @@ require_once BH_CORE_DIR . 'includes/admin/settings.php';
 require_once BH_CORE_DIR . 'includes/admin/dashboard.php';
 require_once BH_CORE_DIR . 'includes/seed.php';
 require_once BH_CORE_DIR . 'includes/image-import.php';
+require_once BH_CORE_DIR . 'includes/redirects.php';
+require_once BH_CORE_DIR . 'includes/launch-check.php';
 
 register_activation_hook( __FILE__, 'bh_core_activate' );
 register_deactivation_hook( __FILE__, 'bh_core_deactivate' );

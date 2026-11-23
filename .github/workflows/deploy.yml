@@ -1,7 +1,14 @@
-name: Deploy to SiteGround (staging)
+name: Deploy to SiteGround
 
-# Pushes to `main` deploy the theme + plugin to bighams.yroc.host.
-# Run manually from the Actions tab with "Run workflow" as well.
+# Pushes to `main` deploy the theme + plugin to staging (bighams.yroc.host).
+# Production (bighamsbbq.com) deploys only when run manually: Actions → Deploy to
+# SiteGround → Run workflow → target: production.
+#
+# Secrets: SG_SSH_HOST, SG_SSH_USER, SG_SSH_PORT, SG_SSH_PRIVATE_KEY,
+# SG_SSH_KEY_PASSPHRASE (optional), SG_SSH_KNOWN_HOSTS (optional), SG_REMOTE_PATH
+# (staging) and SG_PROD_REMOTE_PATH (production). If the live site has its own
+# SiteGround SSH login, add SG_PROD_SSH_HOST / _USER / _PORT / _PRIVATE_KEY /
+# _KEY_PASSPHRASE; any that are missing fall back to the staging values.
 on:
   push:
     branches: [main]
@@ -10,6 +17,11 @@ on:
       - ".github/workflows/deploy.yml"
   workflow_dispatch:
     inputs:
+      target:
+        description: "Which site to deploy to"
+        type: choice
+        options: [staging, production]
+        default: staging
       menu_import:
         description: "Toast menu import after deploy"
         type: choice
@@ -23,9 +35,17 @@ on:
         description: "Print a read-only Toast order breakdown (no guest data)"
         type: boolean
         default: false
+      go_live:
+        description: "Launch: switch the copied site from bighams.yroc.host to the live URL (production only)"
+        type: boolean
+        default: false
+      live_url:
+        description: "Live URL for go_live"
+        type: string
+        default: "https://bighamsbbq.com"
 
 concurrency:
-  group: deploy-staging
+  group: deploy-${{ github.event.inputs.target || 'staging' }}
   cancel-in-progress: false
 
 jobs:
@@ -48,41 +68,55 @@ jobs:
   deploy:
     needs: lint
     runs-on: ubuntu-latest
-    environment: staging
+    environment: ${{ github.event.inputs.target || 'staging' }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Configure SSH
         env:
-          SSH_KEY: ${{ secrets.SG_SSH_PRIVATE_KEY }}
-          KEY_PASSPHRASE: ${{ secrets.SG_SSH_KEY_PASSPHRASE }}
+          TARGET: ${{ github.event.inputs.target || 'staging' }}
+          S_KEY: ${{ secrets.SG_SSH_PRIVATE_KEY }}
+          S_PASS: ${{ secrets.SG_SSH_KEY_PASSPHRASE }}
+          S_HOST: ${{ secrets.SG_SSH_HOST }}
+          S_USER: ${{ secrets.SG_SSH_USER }}
+          S_PORT: ${{ secrets.SG_SSH_PORT }}
+          S_PATH: ${{ secrets.SG_REMOTE_PATH }}
+          P_KEY: ${{ secrets.SG_PROD_SSH_PRIVATE_KEY }}
+          P_PASS: ${{ secrets.SG_PROD_SSH_KEY_PASSPHRASE }}
+          P_HOST: ${{ secrets.SG_PROD_SSH_HOST }}
+          P_USER: ${{ secrets.SG_PROD_SSH_USER }}
+          P_PORT: ${{ secrets.SG_PROD_SSH_PORT }}
+          P_PATH: ${{ secrets.SG_PROD_REMOTE_PATH }}
           KNOWN_HOSTS: ${{ secrets.SG_SSH_KNOWN_HOSTS }}
-          HOST: ${{ secrets.SG_SSH_HOST }}
-          PORT: ${{ secrets.SG_SSH_PORT }}
         run: |
-          mkdir -p ~/.ssh && chmod 700 ~/.ssh
-          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key && chmod 600 ~/.ssh/deploy_key
-          # Keys generated inside SiteGround have a passphrase: strip it on the runner only.
-          if [ -n "$KEY_PASSPHRASE" ]; then
-            ssh-keygen -p -q -P "$KEY_PASSPHRASE" -N "" -f ~/.ssh/deploy_key
+          if [ "$TARGET" = "production" ]; then
+            if [ -n "$P_KEY" ]; then KEY="$P_KEY"; PASS="$P_PASS"; else KEY="$S_KEY"; PASS="$S_PASS"; fi
+            HOST="${P_HOST:-$S_HOST}"; DUSER="${P_USER:-$S_USER}"; PORT="${P_PORT:-$S_PORT}"; REMOTE="$P_PATH"
+          else
+            KEY="$S_KEY"; PASS="$S_PASS"; HOST="$S_HOST"; DUSER="$S_USER"; PORT="$S_PORT"; REMOTE="$S_PATH"
           fi
-          if [ -n "$KNOWN_HOSTS" ]; then
+          for v in KEY HOST DUSER REMOTE; do
+            if [ -z "${!v}" ]; then echo "::error::Missing secret for $v when deploying to $TARGET (production needs SG_PROD_REMOTE_PATH)."; exit 1; fi
+          done
+          echo "Deploying to: $TARGET"
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$KEY" > ~/.ssh/deploy_key && chmod 600 ~/.ssh/deploy_key
+          # Keys generated inside SiteGround have a passphrase: strip it on the runner only.
+          if [ -n "$PASS" ]; then
+            ssh-keygen -p -q -P "$PASS" -N "" -f ~/.ssh/deploy_key
+          fi
+          PORT="${PORT:-18765}"
+          if [ -n "$KNOWN_HOSTS" ] && [ "$HOST" = "$S_HOST" ]; then
             printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
           else
-            ssh-keyscan -p "${PORT:-18765}" "$HOST" > ~/.ssh/known_hosts
+            ssh-keyscan -p "$PORT" "$HOST" > ~/.ssh/known_hosts
           fi
           chmod 644 ~/.ssh/known_hosts
+          { echo "DHOST=$HOST"; echo "DUSER=$DUSER"; echo "DPORT=$PORT"; echo "DREMOTE=$REMOTE"; } >> "$GITHUB_ENV"
 
       - name: Sync theme and plugin
-        env:
-          HOST: ${{ secrets.SG_SSH_HOST }}
-          USER: ${{ secrets.SG_SSH_USER }}
-          PORT: ${{ secrets.SG_SSH_PORT }}
-          REMOTE: ${{ secrets.SG_REMOTE_PATH }}
         run: |
-          for v in HOST USER REMOTE; do
-            if [ -z "${!v}" ]; then echo "::error::Secret for $v is empty (check SG_SSH_HOST / SG_SSH_USER / SG_REMOTE_PATH)"; exit 1; fi
-          done
+          HOST="$DHOST"; USER="$DUSER"; PORT="$DPORT"; REMOTE="$DREMOTE"
           # Accept /home/<user>/www/site/public_html, ~/www/site/public_html, /www/site/public_html or www/site/public_html.
           REL="${REMOTE#\~}"; REL="${REL#/}"
           RESOLVED=$(ssh -i ~/.ssh/deploy_key -p "${PORT:-18765}" "$USER@$HOST" \
@@ -105,16 +139,18 @@ jobs:
 
       - name: Post-deploy (flush caches)
         env:
-          HOST: ${{ secrets.SG_SSH_HOST }}
-          USER: ${{ secrets.SG_SSH_USER }}
-          PORT: ${{ secrets.SG_SSH_PORT }}
+          TARGET: ${{ github.event.inputs.target || 'staging' }}
+          GO_LIVE: ${{ github.event.inputs.go_live || 'false' }}
+          LIVE_URL: ${{ github.event.inputs.live_url || 'https://bighamsbbq.com' }}
           MENU_IMPORT: ${{ github.event.inputs.menu_import || 'none' }}
           TOAST_INSPECT: ${{ github.event.inputs.toast_inspect || 'false' }}
           TOAST_RESYNC: ${{ github.event.inputs.toast_resync_days || '0' }}
         run: |
-          ssh -i ~/.ssh/deploy_key -p "${PORT:-18765}" "$USER@$HOST" bash -s -- "$WP_ROOT" "$MENU_IMPORT" "$TOAST_INSPECT" "$TOAST_RESYNC" <<'REMOTE_SCRIPT'
+          if [ "$GO_LIVE" = "true" ] && [ "$TARGET" != "production" ]; then echo "::error::go_live only runs with target: production"; exit 1; fi
+          ssh -i ~/.ssh/deploy_key -p "$DPORT" "$DUSER@$DHOST" bash -s -- "$WP_ROOT" "$MENU_IMPORT" "$TOAST_INSPECT" "$TOAST_RESYNC" "$TARGET" "$GO_LIVE" "$LIVE_URL" <<'REMOTE_SCRIPT'
           set -e
           cd "$1"
+          if [ "$6" = "true" ]; then wp bighams go-live --to="$7"; fi
           echo "WordPress home: $(wp option get home)"
           wp plugin activate bighams-core
           wp theme activate bighams
@@ -130,4 +166,5 @@ jobs:
           wp rewrite flush
           wp cache flush
           wp sg purge 2>/dev/null || true
+          if [ "$5" = "production" ]; then wp bighams launch-check || true; fi
           REMOTE_SCRIPT

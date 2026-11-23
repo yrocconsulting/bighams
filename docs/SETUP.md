@@ -62,21 +62,15 @@ The website's own form (below) is still there. Set *Where catering & party reque
 
 ## 5. Go-live (bighamsbbq.com)
 
-1. Point the domain at SiteGround, or clone staging to production with SiteGround's Staging tool.
-2. Search-replace `bighams.yroc.host` → `bighamsbbq.com` (`wp search-replace`).
-3. Confirm *Settings → Production domain* = `bighamsbbq.com`. The noindex comes off automatically.
-4. Add **301 redirects** from the old SpotHopper URLs (e.g. with the Redirection plugin) so existing Google rankings carry over:
-
-   | Old URL | New URL |
-   |---|---|
-   | `/lubbock-bigham-s-smokehouse-food-menu` | `/menu/` |
-   | `/lubbock-bigham-s-smokehouse-catering` | `/catering/` |
-   | `/lubbock-bigham-s-smokehouse-catering-information` | `/catering/` |
-   | `/lubbock-bigham-s-smokehouse-locations` | `/locations/` |
-   | `/lubbock-bigham-s-smokehouse-party` | `/parties/` |
-   | `/lubbock-bigham-s-smokehouse-party-informations` | `/parties/` |
-   | `/accessibility-page-01` | `/` (or an accessibility page) |
-
-5. Submit `/wp-sitemap.xml` in Google Search Console and Bing Webmaster Tools. Bing feeds ChatGPT and Copilot search.
-6. Update each Google Business Profile's website link to its location page (e.g. `/locations/82nd-street/`), not the homepage.
-7. Add a production deploy job: copy the `deploy` job in `.github/workflows/deploy.yml`, give it a `production` environment with its own secrets, and trigger it on a `production` branch or on release tags.
+1. **SiteGround:** create a new website for `bighamsbbq.com` (Client Area → Websites → New Website → existing domain). Choose **Migrate** with the **SiteGround Migrator** plugin: install the plugin on the staging site (bighams.yroc.host), paste the transfer token, and it copies the database, media, theme, plugin, Toast data and settings.
+2. **GitHub secrets for production:** add `SG_PROD_REMOTE_PATH` (the new site's folder, e.g. `~/www/bighamsbbq.com/public_html`). If the new site has its own SSH login, also add `SG_PROD_SSH_HOST`, `SG_PROD_SSH_USER`, `SG_PROD_SSH_PORT` and `SG_PROD_SSH_PRIVATE_KEY`, plus `SG_PROD_SSH_KEY_PASSPHRASE` if that key has one. Import the public key in the new site's SSH Keys Manager.
+3. **Switch the address:** Actions → *Deploy to SiteGround* → Run workflow with **target: production** and **go_live: on**. This runs `wp bighams go-live`, which replaces every `bighams.yroc.host` URL with `https://bighamsbbq.com`, turns search indexing on and clears caches. It then prints `wp bighams launch-check`.
+4. **DNS:** where the domain's DNS is managed, change only the **A records for `@` and `www`** to the new site's SiteGround IP (Site Tools → Site → IP). **Do not change nameservers or MX/TXT/CNAME records.** The domain's Microsoft 365 email depends on them. Lower the TTL a day ahead if possible.
+5. **SSL:** Site Tools → Security → SSL Manager → Let's Encrypt for `bighamsbbq.com` and `www`. Then turn on **HTTPS Enforce**.
+6. **Old URLs:** 301 redirects for the SpotHopper pages (`/lubbock-bigham-s-smokehouse-food-menu` → `/menu/`, etc.) are built into the plugin (`includes/redirects.php`).
+7. **After launch:**
+   - Submit `/wp-sitemap.xml` in Google Search Console and Bing Webmaster Tools.
+   - Point each Google Business Profile's website link to its location page.
+   - Add an SMTP plugin and a real cron job (see launch-check).
+   - Keep SpotHopper active until the new site has served for a few days, then cancel it.
+8. From then on, **pushes to `main` deploy to staging only**. Production deploys are manual (**target: production**).
