@@ -64,6 +64,27 @@ function bh_core_deactivate() {
  * does not fire on a file-sync deploy).
  */
 /**
+ * Add the categorical-menu combine rules to sites that already saved Settings.
+ */
+add_action( 'init', function () {
+	if ( get_option( 'bh_migr_menu_v2' ) ) {
+		return;
+	}
+	$opts = get_option( 'bighams_settings' );
+	if ( is_array( $opts ) && isset( $opts['toast_merge'] ) ) {
+		$have = strtolower( $opts['toast_merge'] );
+		foreach ( explode( "\n", BH_MENU_MERGE_V2 ) as $line ) {
+			$target = strtolower( trim( strtok( $line, '=' ) ) );
+			if ( false === strpos( $have, $target . ' =' ) ) {
+				$opts['toast_merge'] = trim( $opts['toast_merge'] ) . "\n" . $line;
+			}
+		}
+		update_option( 'bighams_settings', $opts );
+	}
+	update_option( 'bh_migr_menu_v2', 1, false );
+}, 1 );
+
+/**
  * One-time settings updates for sites that already saved Settings.
  */
 add_action( 'init', function () {

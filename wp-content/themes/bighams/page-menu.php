@@ -8,10 +8,8 @@
 defined( 'ABSPATH' ) || exit;
 get_header();
 
-$sections   = bht_menu( 'restaurant' );
-$specials   = bht_menu( 'specials' );
-$happy      = bht_menu( 'happy-hour' );
-$all        = array_merge( $sections, $specials, $happy );
+$cats       = bht_menu_categories();
+$all        = $cats;
 $order_btn  = '<button class="btn btn--primary" type="button" data-order-open aria-haspopup="dialog" aria-controls="order-modal">' . bht_icon( 'bag' ) . ' ' . esc_html__( 'Order Online', 'bighams' ) . '</button>';
 $order_btn .= '<a class="btn btn--outline-light" href="' . esc_url( home_url( '/catering/' ) ) . '">' . esc_html__( 'Catering Menu', 'bighams' ) . '</a>';
 
@@ -28,14 +26,17 @@ while ( have_posts() ) :
 	);
 	?>
 
-	<?php if ( $all ) : ?>
-		<nav class="menu-tabs" aria-label="<?php esc_attr_e( 'Menu sections', 'bighams' ); ?>" data-menu-tabs>
-			<div class="container">
-				<ul>
-					<?php foreach ( $all as $s ) : ?>
-						<li><a href="#<?php echo esc_attr( $s['slug'] ); ?>"><?php echo esc_html( $s['name'] ); ?></a></li>
+	<?php if ( $cats ) : ?>
+		<nav class="menu-tabs" aria-label="<?php esc_attr_e( 'Menu categories', 'bighams' ); ?>" data-menu-tabs>
+			<div class="container menu-tabs__inner">
+				<button class="menu-tabs__arrow menu-tabs__arrow--prev" type="button" data-tabs-scroll="-1" aria-label="<?php esc_attr_e( 'Scroll categories left', 'bighams' ); ?>" hidden><?php echo bht_icon( 'arrow' ); // phpcs:ignore ?></button>
+				<ul role="tablist" data-tabs-list>
+					<?php foreach ( $cats as $i => $c ) : ?>
+						<li role="presentation"><a role="tab" id="tab-<?php echo esc_attr( $c['slug'] ); ?>" href="#<?php echo esc_attr( $c['slug'] ); ?>" aria-controls="<?php echo esc_attr( $c['slug'] ); ?>" aria-selected="<?php echo 0 === $i ? 'true' : 'false'; ?>"<?php echo 0 === $i ? ' class="is-active"' : ''; ?>><?php echo esc_html( $c['name'] ); ?></a></li>
 					<?php endforeach; ?>
+					<li role="presentation"><a class="menu-tabs__link" href="<?php echo esc_url( home_url( '/catering/' ) ); ?>"><?php esc_html_e( 'Catering', 'bighams' ); ?> &rarr;</a></li>
 				</ul>
+				<button class="menu-tabs__arrow menu-tabs__arrow--next" type="button" data-tabs-scroll="1" aria-label="<?php esc_attr_e( 'Scroll categories right', 'bighams' ); ?>" hidden><?php echo bht_icon( 'arrow' ); // phpcs:ignore ?></button>
 			</div>
 		</nav>
 	<?php endif; ?>
@@ -46,27 +47,31 @@ while ( have_posts() ) :
 				<div class="entry-content menu-page__intro"><?php the_content(); ?></div>
 			<?php endif; ?>
 
-			<?php if ( ! $all ) : ?>
+			<?php if ( ! $cats ) : ?>
 				<p><?php esc_html_e( 'Our menu is being updated. Please call us or order online.', 'bighams' ); ?></p>
 			<?php endif; ?>
 
-			<?php foreach ( $all as $s ) : ?>
-				<section class="menu-section<?php echo 'happy-hour' === $s['group'] ? ' menu-section--happy' : ''; ?>" id="<?php echo esc_attr( $s['slug'] ); ?>" aria-labelledby="sec-<?php echo esc_attr( $s['slug'] ); ?>">
-					<header class="menu-section__head">
-						<h2 id="sec-<?php echo esc_attr( $s['slug'] ); ?>" class="menu-section__title"><?php echo esc_html( $s['name'] ); ?></h2>
-						<?php if ( $s['note'] ) : ?>
-							<p class="menu-section__note"><?php echo esc_html( $s['note'] ); ?></p>
-						<?php endif; ?>
-						<?php if ( $s['description'] ) : ?>
-							<p class="menu-section__desc"><?php echo esc_html( $s['description'] ); ?></p>
-						<?php endif; ?>
-					</header>
-					<div class="menu-grid">
-						<?php foreach ( $s['items'] as $item ) : ?>
-							<?php get_template_part( 'template-parts/menu-item', null, array( 'item' => $item ) ); ?>
-						<?php endforeach; ?>
-					</div>
-				</section>
+			<?php foreach ( $cats as $c ) : ?>
+				<div class="menu-cat" id="<?php echo esc_attr( $c['slug'] ); ?>" role="tabpanel" aria-labelledby="tab-<?php echo esc_attr( $c['slug'] ); ?>" data-menu-panel>
+					<?php foreach ( $c['sections'] as $s ) : ?>
+						<section class="menu-section<?php echo 'happy-hour' === $s['group'] ? ' menu-section--happy' : ''; ?>" id="<?php echo esc_attr( $s['slug'] ); ?>" aria-labelledby="sec-<?php echo esc_attr( $s['slug'] ); ?>">
+							<header class="menu-section__head">
+								<h2 id="sec-<?php echo esc_attr( $s['slug'] ); ?>" class="menu-section__title"><?php echo esc_html( $s['name'] ); ?></h2>
+								<?php if ( $s['note'] ) : ?>
+									<p class="menu-section__note"><?php echo esc_html( $s['note'] ); ?></p>
+								<?php endif; ?>
+								<?php if ( $s['description'] ) : ?>
+									<p class="menu-section__desc"><?php echo esc_html( $s['description'] ); ?></p>
+								<?php endif; ?>
+							</header>
+							<div class="menu-grid">
+								<?php foreach ( $s['items'] as $item ) : ?>
+									<?php get_template_part( 'template-parts/menu-item', null, array( 'item' => $item ) ); ?>
+								<?php endforeach; ?>
+							</div>
+						</section>
+					<?php endforeach; ?>
+				</div>
 			<?php endforeach; ?>
 
 			<p class="menu-page__fine"><?php esc_html_e( 'Prices and availability may vary by location and are subject to change. Basic sides: pinto beans, potato salad, coleslaw, green beans.', 'bighams' ); ?></p>

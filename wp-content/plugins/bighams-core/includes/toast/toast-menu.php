@@ -274,6 +274,63 @@ function bh_toast_norm( $name ) {
 }
 
 /**
+ * Split a size or variant out of an item name, using the section's name:
+ *   "Pan of Pinto Beans" (Pinto Beans)              → Pinto Beans · "Pan"
+ *   "Small Chopped BBQ Sandwich Combo" (Chopped BBQ) → Chopped BBQ Sandwich · "Small Combo"
+ *   "Pulled Pork – Big Baker Bag" (Big Baker Bag)    → Big Baker Bag · "Pulled Pork"
+ *   "Sandwich Pack – Turkey Breast" (Sandwich Pack)  → Sandwich Pack · "Turkey Breast"
+ *   "Small Frito Pie" (Frito Pies)                   → Frito Pie · "Small"
+ *
+ * @return array{0:string,1:string,2:string}|null [match key, display name, size label]
+ */
+function bh_toast_split_size( $name, $section ) {
+	$low  = mb_strtolower( str_replace( array( "\u{2019}", "\u{2018}" ), "'", trim( $name ) ) );
+	$keys = array( trim( $section ) );
+	if ( preg_match( '/s$/i', trim( $section ) ) && mb_strlen( $section ) > 4 ) {
+		$keys[] = mb_substr( trim( $section ), 0, -1 ); // "Frito Pies" → "Frito Pie".
+	}
+	foreach ( $keys as $key ) {
+		$k   = mb_strtolower( str_replace( array( "\u{2019}", "\u{2018}" ), "'", $key ) );
+		$pos = mb_strpos( $low, $k );
+		if ( false === $pos || mb_strlen( $k ) < 3 ) {
+			continue;
+		}
+		$pre  = trim( mb_substr( $name, 0, $pos ) );
+		$post = trim( mb_substr( $name, $pos + mb_strlen( $k ) ) );
+		$pre  = trim( preg_replace( '/\s*(\bof|[\x{2013}\x{2014}-])$/iu', '', $pre ) );
+		$post = trim( preg_replace( '/^[\x{2013}\x{2014}-]\s*/u', '', $post ) );
+		if ( '' === $post ) {
+			return array( $k, $key, $pre );
+		}
+		if ( '' === $pre ) {
+			return array( $k, $key, $post );
+		}
+		$words = preg_split( '/\s+/', $post );
+		$first = array_shift( $words );
+		return array( $k . ' ' . mb_strtolower( $first ), $key . ' ' . $first, trim( $pre . ' ' . implode( ' ', $words ) ) );
+	}
+	// Fallback: one word of the section name, with a size before it and a word after it
+	// ("Small Sausage Sandwich" in "Original Sausage" → Original Sausage Sandwich · "Small").
+	foreach ( preg_split( '/\s+/', trim( $section ) ) as $word ) {
+		$w = mb_strtolower( $word );
+		if ( mb_strlen( $w ) < 4 || ! preg_match( '/^(.+?)\s+' . preg_quote( $w, '/' ) . '\s+(.+)$/u', $low, $mm ) ) {
+			continue;
+		}
+		if ( ! preg_match( "/^(small|medium|large|single|regular|half|full|one|two|three|four|kid'?s|\\d+ ?oz)$/i", trim( $mm[1] ) ) ) {
+			continue; // Only real size words ("Little Texan …" is a dish name, not a size).
+		}
+		$pos   = mb_strlen( $mm[1] ) + 1;
+		$pre   = trim( mb_substr( $name, 0, $pos ) );
+		$post  = trim( mb_substr( $name, $pos + mb_strlen( $w ) ) );
+		$words = preg_split( '/\s+/', $post );
+		$first = array_shift( $words );
+		$k     = mb_strtolower( trim( $section ) );
+		return array( $k . ' ' . mb_strtolower( $first ), trim( $section ) . ' ' . $first, trim( $pre . ' ' . implode( ' ', $words ) ) );
+	}
+	return null;
+}
+
+/**
  * Website display rules applied to the Toast menu (Settings → Toast POS):
  *  - toast_hide:  Toast sections or items kept in Toast POS but left off the website.
  *  - toast_merge: "New section = Section A, Section B" combines size-per-section groups
@@ -294,7 +351,7 @@ function bh_toast_apply_display_rules( $sections, $data, &$report ) {
 			continue;
 		}
 		list( $target, $sources ) = array_map( 'trim', explode( '=', $line, 2 ) );
-		$sources = array_values( array_filter( array_map( 'trim', explode( ',', $sources ) ) ) );
+		$sources = bh_split_names( $sources );
 		if ( $target && $sources ) {
 			$rules[] = array( 'target' => $target, 'sources' => array_map( 'bh_toast_norm', $sources ) );
 		}
@@ -357,12 +414,11 @@ function bh_toast_apply_display_rules( $sections, $data, &$report ) {
 		foreach ( $items as $it ) {
 			$nit  = bh_toast_norm( $it['name'] );
 			$name = trim( $it['name'] );
-			if ( $nsec === substr( $nit, -strlen( $nsec ) ) ) {
-				// Shape B: the prefix before the section name is the size ("Pan of" → "Pan").
-				$base  = $nsec;
-				$disp  = trim( $sec['name'] );
-				$size  = trim( mb_substr( $name, 0, mb_strlen( $name ) - mb_strlen( $sec['name'] ) ) );
-				$size  = trim( preg_replace( '/\s+of$/i', '', $size ) );
+			$split = bh_toast_split_size( $name, $sec['name'] );
+			if ( $split ) {
+				// Size/variant is part of the item name ("Pan of Pinto Beans", "Small Chopped BBQ Sandwich Combo",
+				// "Pulled Pork – Big Baker Bag", "Small Frito Pie" in "Frito Pies").
+				list( $base, $disp, $size ) = $split;
 			} elseif ( $shape_a ) {
 				$size = $sec_size;
 				$base = trim( preg_replace( '/^' . preg_quote( bh_toast_norm( $size ), '/' ) . '\s*/i', '', $nit ) );
@@ -385,17 +441,31 @@ function bh_toast_apply_display_rules( $sections, $data, &$report ) {
 					'guid'        => 'merge:' . sanitize_title( $target ) . ':' . sanitize_title( $base ),
 					'description' => (string) ( $it['description'] ?? '' ),
 					'_rows'       => array(),
+					'_src_guids'  => array(),
 				);
 				$m['_index'][ $base ] = count( $m['items'] ) - 1;
 			}
 			$k = $m['_index'][ $base ];
-			$m['items'][ $k ]['_rows'] = array_merge( $m['items'][ $k ]['_rows'], $rows );
+			$m['items'][ $k ]['_rows']        = array_merge( $m['items'][ $k ]['_rows'], $rows );
+			$m['items'][ $k ]['_src_guids'][] = (string) ( $it['guid'] ?? '' );
 			if ( '' === $m['items'][ $k ]['description'] && ! empty( $it['description'] ) ) {
 				$m['items'][ $k ]['description'] = (string) $it['description'];
 			}
 		}
 		unset( $m );
 	}
+	foreach ( $out as &$sec ) {
+		foreach ( $sec['items'] as &$it ) {
+			if ( isset( $it['_rows'] ) && count( $it['_rows'] ) > 1 ) {
+				foreach ( $it['_rows'] as &$r ) {
+					$r['label'] = '' === $r['label'] ? 'Regular' : $r['label'];
+				}
+				unset( $r );
+			}
+		}
+		unset( $it );
+	}
+	unset( $sec );
 	return $out;
 }
 
@@ -472,6 +542,16 @@ function bh_apply_toast_menu( $data, $dry_run = true ) {
 					update_post_meta( $id, '_bh_toast_guid', (string) ( $it['guid'] ?? '' ) );
 					if ( $tid ) {
 						wp_set_object_terms( $id, array( $tid ), 'bh_menu_section', false );
+					}
+					if ( ! has_post_thumbnail( $id ) && ! empty( $it['_src_guids'] ) ) {
+						// Combined item: reuse the photo of one of the Toast items it replaces.
+						foreach ( array_filter( $it['_src_guids'] ) as $sg ) {
+							$src = get_posts( array( 'post_type' => 'bh_menu_item', 'post_status' => array( 'publish', 'draft' ), 'posts_per_page' => 1, 'fields' => 'ids', 'meta_key' => '_bh_toast_guid', 'meta_value' => $sg ) ); // phpcs:ignore
+							if ( $src && has_post_thumbnail( $src[0] ) ) {
+								set_post_thumbnail( $id, get_post_thumbnail_id( $src[0] ) );
+								break;
+							}
+						}
 					}
 					if ( ! has_post_thumbnail( $id ) && ! empty( $it['image'] ) && empty( $it['_rows'] ) && is_string( $it['image'] ) && function_exists( 'bh_import_media' ) ) {
 						$img = bh_import_media( $it['image'], $name, $name . " at Bigham's Smokehouse, Lubbock TX" );

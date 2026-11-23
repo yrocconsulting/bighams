@@ -5,6 +5,12 @@
 
 defined( 'ABSPATH' ) || exit;
 
+/** Combine rules added for the categorical menu (Nov 2026). */
+define( 'BH_MENU_MERGE_V2', "Meat Plates = Meat Plates\nSandwiches = Chopped BBQ, Sliced Brisket, Pulled Pork, Original Sausage, Spicy Sausage, Turkey Breast\nSpuds, Pies & Bowls = Frito Pies, Stuffed Bakers\nFamily Packs = Big Baker Bag, Sandwich Pack, Pit Master Pack (Number 2)\nSides = Pinto Beans, Traditional Potato Salad, House Slaw, Green Chile Cream Corn, Honey Skillet Cornbread, White Cheddar Mac' n Cheese, Green Beans w/ Bacon, Fried Okra, Roasted Corn on the Cob, Jalapeno Street Style Roasted Corn, Beef Tallow Fries, Baked Potato" );
+
+/** Menu page tabs: Tab name = website sections shown in it (after combining). */
+define( 'BH_MENU_CATEGORIES', "Plates = Meat Plates, Little Texan Plates\nSandwiches = Sandwiches\nMeat by the Pound = Meat By The Pound\nSpuds, Pies & Bowls = Spuds, Pies & Bowls\nSides = Sides, Beef Jerkey, Beef Jerky\nSweets = Desserts\nFamily Packs = Family Packs\nSpecials = Friday Special, Sunday Special, Daily Specials, Secret Menu\nDrinks = Drinks, Bottled Drinks, Drinks by the Gallon, Beer, Can, Canned Cocktails\nHappy Hour = Happy Hour Beer, Happy Hour Canned Cocktails" );
+
 /**
  * Default business settings. Editable in Bigham's → Settings.
  */
@@ -52,7 +58,8 @@ function bh_default_settings() {
 		'toast_menu_mode'     => 'manual',
 		'toast_menu_location' => '',
 		'toast_hide'          => "Lay's Potato Chips\nOriginal BBQ Sauce\nSpicy BBQ Sauce\nPickles\nJalapenos\nCherry Peppers\nOnions\nCheese\nButter\nSour Cream\nScallions\nBacon\nToast\nLoaf of Bread\nRanch Dressing\nPaper Gift Card\nSecret Menu",
-		'toast_merge'         => "Drinks = 20 oz Drinks, 32 oz Drinks, Kid's Drinks\nDesserts = Peach Cobbler, Cherry Cobbler, Apple Cobbler, Pecan Cobbler, Blackberry Cobbler, Other Sweets",
+		'toast_merge'         => "Drinks = 20 oz Drinks, 32 oz Drinks, Kid's Drinks\nDesserts = Peach Cobbler, Cherry Cobbler, Apple Cobbler, Pecan Cobbler, Blackberry Cobbler, Other Sweets\n" . BH_MENU_MERGE_V2,
+		'menu_categories'     => BH_MENU_CATEGORIES,
 	);
 }
 

@@ -71,6 +71,7 @@ function bh_settings_sections() {
 			'toast_menu_mode'     => array( 'Website menu source', 'select', array( 'manual' => 'Import from Toast when I click "Import menu now"', 'auto' => 'Sync from Toast automatically every morning' ) ),
 			'toast_menu_location' => 'Toast Restaurant GUID to copy the menu from (blank = first location)',
 			'toast_hide'          => array( 'Keep in Toast but hide on the website (one Toast section or item name per line)', 'textarea' ),
+			'menu_categories'     => array( 'Menu page tabs (one per line: Tab name = Section, Section). Sections not listed appear under "More".', 'textarea' ),
 			'toast_merge'         => array( 'Combine sections where the size is the section (one per line: New section = Section A, Section B). Each item shows once, priced by size.', 'textarea' ),
 		),
 	);

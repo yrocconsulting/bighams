@@ -390,3 +390,64 @@ function bh_get_reviews( $limit = 8 ) {
 function bh_track_attrs( $event, $location = 0 ) {
 	return sprintf( ' data-bh-track="%s" data-bh-loc="%d"', esc_attr( $event ), (int) $location );
 }
+
+/**
+ * Menu page tabs: website sections grouped into categories (Settings → Menu page tabs).
+ *
+ * @return array<int,array{name:string,slug:string,sections:array}>
+ */
+function bh_get_menu_categories() {
+	$sections = array_merge( bh_get_menu( 'restaurant' ), bh_get_menu( 'specials' ), bh_get_menu( 'happy-hour' ) );
+	$norm     = fn( $x ) => strtolower( trim( preg_replace( '/\s+/', ' ', str_replace( array( "\u{2019}", '&#8217;' ), "'", html_entity_decode( (string) $x, ENT_QUOTES, 'UTF-8' ) ) ) ) );
+	$cats     = array();
+	$where    = array();
+	foreach ( bh_lines( bh_setting( 'menu_categories' ) ) as $line ) {
+		if ( false === strpos( $line, '=' ) ) {
+			continue;
+		}
+		list( $name, $list ) = array_map( 'trim', explode( '=', $line, 2 ) );
+		$cats[ $name ]       = array( 'name' => $name, 'slug' => 'cat-' . sanitize_title( $name ), 'sections' => array() );
+		foreach ( bh_split_names( $list ) as $i => $sec ) {
+			$where[ $norm( $sec ) ] = array( $name, $i );
+		}
+	}
+	$more = array();
+	foreach ( $sections as $sec ) {
+		$key = $norm( $sec['name'] );
+		if ( isset( $where[ $key ] ) ) {
+			$cats[ $where[ $key ][0] ]['sections'][ $where[ $key ][1] * 1000 + count( $cats[ $where[ $key ][0] ]['sections'] ) ] = $sec;
+		} else {
+			$more[] = $sec;
+		}
+	}
+	$out = array();
+	foreach ( $cats as $c ) {
+		if ( $c['sections'] ) {
+			ksort( $c['sections'] );
+			$c['sections'] = array_values( $c['sections'] );
+			$out[]         = $c;
+		}
+	}
+	if ( $more ) {
+		$out[] = array( 'name' => __( 'More', 'bighams' ), 'slug' => 'cat-more', 'sections' => $more );
+	}
+	return $out;
+}
+
+/**
+ * Split "A, B, C" into names, also matching names that contain commas
+ * ("Spuds, Pies & Bowls"): every run of adjacent pieces is returned too.
+ *
+ * @return string[]
+ */
+function bh_split_names( $list ) {
+	$parts = array_values( array_filter( array_map( 'trim', explode( ',', (string) $list ) ), 'strlen' ) );
+	$out   = array();
+	$n     = count( $parts );
+	for ( $i = 0; $i < $n; $i++ ) {
+		for ( $j = $i; $j < min( $n, $i + 4 ); $j++ ) {
+			$out[] = implode( ', ', array_slice( $parts, $i, $j - $i + 1 ) );
+		}
+	}
+	return array_values( array_unique( $out ) );
+}

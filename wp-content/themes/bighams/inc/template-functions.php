@@ -36,6 +36,17 @@ function bht_menu( $group = 'restaurant' ) {
 	return function_exists( 'bh_get_menu' ) ? (array) bh_get_menu( $group ) : array();
 }
 
+function bht_menu_categories() {
+	if ( function_exists( 'bh_get_menu_categories' ) ) {
+		return (array) bh_get_menu_categories();
+	}
+	$out = array();
+	foreach ( array_merge( bht_menu( 'restaurant' ), bht_menu( 'specials' ), bht_menu( 'happy-hour' ) ) as $s ) {
+		$out[] = array( 'name' => $s['name'], 'slug' => 'cat-' . $s['slug'], 'sections' => array( $s ) );
+	}
+	return $out;
+}
+
 function bht_featured_items( $limit = 8 ) {
 	return function_exists( 'bh_get_featured_items' ) ? (array) bh_get_featured_items( $limit ) : array();
 }
