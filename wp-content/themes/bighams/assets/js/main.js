@@ -97,10 +97,14 @@
 		var list = tabs.querySelector('[data-tabs-list]');
 		var tabLinks = Array.prototype.slice.call(tabs.querySelectorAll('a[role="tab"]'));
 		var panels = Array.prototype.slice.call(doc.querySelectorAll('[data-menu-panel]'));
+		var page = doc.querySelector('[data-menu-page]');
 		var show = function (id, focus) {
-			var found = false;
-			panels.forEach(function (p) { var on = p.id === id; p.hidden = !on; found = found || on; });
-			if (!found && panels[0]) { panels[0].hidden = false; id = panels[0].id; }
+			var all = !id || id === 'cat-all';
+			var found = all;
+			panels.forEach(function (p) { var on = all || p.id === id; p.hidden = !on; found = found || p.id === id; });
+			if (!found) { all = true; id = 'cat-all'; panels.forEach(function (p) { p.hidden = false; }); }
+			if (all) id = 'cat-all';
+			if (page) page.classList.toggle('is-all', all);
 			tabLinks.forEach(function (a) {
 				var on = a.getAttribute('aria-controls') === id;
 				a.classList.toggle('is-active', on);
@@ -112,14 +116,14 @@
 		};
 		var startId = (location.hash || '').slice(1);
 		// A link to a section (#pinto-beans) opens the category that holds it.
-		var startEl = startId ? doc.getElementById(startId) : null;
+		var startEl = startId && startId !== 'cat-all' ? doc.getElementById(startId) : null;
 		if (startEl && !startEl.matches('[data-menu-panel]')) {
 			var holder = startEl.closest('[data-menu-panel]');
 			startId = holder ? holder.id : '';
 		} else if (!startEl) {
 			startId = '';
 		}
-		show(startId || (panels[0] && panels[0].id));
+		show(startId || 'cat-all');
 		tabLinks.forEach(function (a, i) {
 			a.addEventListener('click', function (e) {
 				e.preventDefault();
@@ -139,6 +143,23 @@
 				show(n.getAttribute('aria-controls'), true);
 			});
 		});
+		// In "All", highlight the category being read and keep it in view in the bar.
+		if ('IntersectionObserver' in window) {
+			var spy = new IntersectionObserver(function (entries) {
+				if (!page || !page.classList.contains('is-all')) return;
+				entries.forEach(function (en) {
+					if (!en.isIntersecting) return;
+					tabLinks.forEach(function (a) {
+						var on = a.getAttribute('aria-controls') === en.target.id;
+						a.classList.toggle('is-current', on);
+						if (on && list) list.scrollTo({ left: a.offsetLeft - list.clientWidth / 2 + a.offsetWidth / 2, behavior: reduceMotion ? 'auto' : 'smooth' });
+					});
+				});
+			}, { rootMargin: '-30% 0px -65% 0px' });
+			panels.forEach(function (p) { spy.observe(p); });
+		}
+		tabs.addEventListener('click', function () { tabLinks.forEach(function (a) { a.classList.remove('is-current'); }); });
+
 		// Arrow buttons + visible scrollbar for the category bar.
 		var prev = tabs.querySelector('[data-tabs-scroll="-1"]');
 		var next = tabs.querySelector('[data-tabs-scroll="1"]');

@@ -31,8 +31,9 @@ while ( have_posts() ) :
 			<div class="container menu-tabs__inner">
 				<button class="menu-tabs__arrow menu-tabs__arrow--prev" type="button" data-tabs-scroll="-1" aria-label="<?php esc_attr_e( 'Scroll categories left', 'bighams' ); ?>" hidden><?php echo bht_icon( 'arrow' ); // phpcs:ignore ?></button>
 				<ul role="tablist" data-tabs-list>
+					<li role="presentation"><a role="tab" id="tab-cat-all" href="#cat-all" aria-controls="cat-all" aria-selected="true" class="is-active"><?php esc_html_e( 'All', 'bighams' ); ?></a></li>
 					<?php foreach ( $cats as $i => $c ) : ?>
-						<li role="presentation"><a role="tab" id="tab-<?php echo esc_attr( $c['slug'] ); ?>" href="#<?php echo esc_attr( $c['slug'] ); ?>" aria-controls="<?php echo esc_attr( $c['slug'] ); ?>" aria-selected="<?php echo 0 === $i ? 'true' : 'false'; ?>"<?php echo 0 === $i ? ' class="is-active"' : ''; ?>><?php echo esc_html( $c['name'] ); ?></a></li>
+						<li role="presentation"><a role="tab" id="tab-<?php echo esc_attr( $c['slug'] ); ?>" href="#<?php echo esc_attr( $c['slug'] ); ?>" aria-controls="<?php echo esc_attr( $c['slug'] ); ?>" aria-selected="false"><?php echo esc_html( $c['name'] ); ?></a></li>
 					<?php endforeach; ?>
 					<li role="presentation"><a class="menu-tabs__link" href="<?php echo esc_url( home_url( '/catering/' ) ); ?>"><?php esc_html_e( 'Catering', 'bighams' ); ?> &rarr;</a></li>
 				</ul>
@@ -41,7 +42,7 @@ while ( have_posts() ) :
 		</nav>
 	<?php endif; ?>
 
-	<div class="section section--paper menu-page">
+	<div class="section section--paper menu-page is-all" data-menu-page>
 		<div class="container">
 			<?php if ( get_the_content() ) : ?>
 				<div class="entry-content menu-page__intro"><?php the_content(); ?></div>
@@ -53,6 +54,9 @@ while ( have_posts() ) :
 
 			<?php foreach ( $cats as $c ) : ?>
 				<div class="menu-cat" id="<?php echo esc_attr( $c['slug'] ); ?>" role="tabpanel" aria-labelledby="tab-<?php echo esc_attr( $c['slug'] ); ?>" data-menu-panel>
+					<?php if ( count( $c['sections'] ) > 1 || strtolower( $c['sections'][0]['name'] ) !== strtolower( $c['name'] ) ) : ?>
+						<p class="menu-cat__label" aria-hidden="true"><?php echo esc_html( $c['name'] ); ?></p>
+					<?php endif; ?>
 					<?php foreach ( $c['sections'] as $s ) : ?>
 						<section class="menu-section<?php echo 'happy-hour' === $s['group'] ? ' menu-section--happy' : ''; ?>" id="<?php echo esc_attr( $s['slug'] ); ?>" aria-labelledby="sec-<?php echo esc_attr( $s['slug'] ); ?>">
 							<header class="menu-section__head">
