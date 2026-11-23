@@ -187,6 +187,7 @@ add_action( 'save_post', function ( $post_id, $post ) {
 		update_post_meta( $post_id, '_bh_notes', sanitize_textarea_field( wp_unslash( $_POST['bh_lead_notes'] ?? '' ) ) ); // phpcs:ignore
 	}
 	delete_transient( 'bh_llms_txt' );
+	delete_transient( 'bh_featured_fill' );
 }, 10, 2 );
 
 function bh_render_lead_box( $post ) {

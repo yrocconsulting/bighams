@@ -66,6 +66,8 @@ function bh_image_manifest() {
 			array( 'specials', 'Sunday Chicken Plate', $s . '50/1d4991a67a4e8398120379d661024f/full' ),
 			array( 'specials', 'Little Sandwich Special', $s . '3f/0461b83cdf4ee585be4ba11d2ad4dc/full' ),
 			array( 'specials', 'Big Sandwich Special', $s . '3f/0461b83cdf4ee585be4ba11d2ad4dc/full' ),
+			array( 'restaurant', 'Hog Heaven Fries', $s . '99/79e482ab9d4644994bcf5ce654a112/full' ),
+			array( 'specials', 'Hog Heaven Fries', $s . '99/79e482ab9d4644994bcf5ce654a112/full' ),
 		),
 		'packages' => array(
 			'All The Fixin\'s'       => $s . '3f/0ca3265ab646f39190fa284fe01ffb/full',
@@ -137,6 +139,20 @@ function bh_pro_photo_manifest() {
 				array( 'restaurant', 'Little Mac Bowl', 'mac-and-cheese-bowl.jpg' ),
 				array( 'restaurant', 'Big Mac Bowl', 'mac-and-cheese-bowl.jpg' ),
 				array( 'catering', 'Seasonal Corn', 'roasted-corn.jpg' ),
+				// Toast menu names (after the website menu was synced from Toast).
+				array( 'restaurant', 'Sliced Brisket by the Pound', 'sliced-brisket.jpg' ),
+				array( 'restaurant', 'Chopped BBQ by the Pound', 'chopped-brisket.jpg' ),
+				array( 'restaurant', 'Pulled Pork by the Pound', 'pulled-pork.jpg' ),
+				array( 'restaurant', 'Original Sausage by the Pound', 'original-sausage.jpg' ),
+				array( 'restaurant', 'Spicy Sausage by the Pound', 'spicy-sausage.jpg' ),
+				array( 'restaurant', 'Turkey Breast by the Pound', 'turkey-breast.jpg' ),
+				array( 'restaurant', 'St. Louis Pork Ribs by the Pound', 'st-louis-pork-ribs.jpg' ),
+				array( 'restaurant', 'Single Fried Okra', 'fried-okra.jpg' ),
+				array( 'restaurant', 'Single Baked Potato', 'baked-potato.jpg' ),
+				array( 'restaurant', 'Single Beef Tallow Fries', 'garlic-parm-fries.jpg' ),
+				array( 'restaurant', 'Roasted Corn on the Cob', 'roasted-corn.jpg' ),
+				array( 'restaurant', 'Mac-n-Cheese Bowl', 'mac-and-cheese-bowl.jpg' ),
+				array( 'specials', 'Mac-n-Cheese Bowl', 'mac-and-cheese-bowl.jpg' ),
 			)
 		),
 		'theme' => array(

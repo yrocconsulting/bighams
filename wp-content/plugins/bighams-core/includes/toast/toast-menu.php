@@ -512,6 +512,7 @@ function bh_apply_toast_menu( $data, $dry_run = true ) {
 		update_option( 'bh_toast_menu_import', $report, false );
 		delete_transient( 'bh_llms_txt' );
 		delete_transient( 'bh_llms_txt_full' );
+		delete_transient( 'bh_featured_fill' );
 		wp_cache_flush();
 	}
 	return $report;

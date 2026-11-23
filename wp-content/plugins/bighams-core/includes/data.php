@@ -237,17 +237,66 @@ function bh_price_label( $prices, $unit = '' ) {
  * Featured menu items (homepage carousel).
  */
 function bh_get_featured_items( $limit = 8 ) {
-	$posts = get_posts(
+	// 1. Items staff marked "Feature on homepage" (published only).
+	$ids = get_posts(
 		array(
 			'post_type'      => 'bh_menu_item',
+			'post_status'    => 'publish',
 			'posts_per_page' => $limit,
+			'fields'         => 'ids',
 			'meta_key'       => '_bh_featured', // phpcs:ignore WordPress.DB.SlowDBQuery
 			'meta_value'     => '1', // phpcs:ignore WordPress.DB.SlowDBQuery
 			'orderby'        => 'menu_order',
 			'order'          => 'ASC',
 		)
 	);
-	return array_map( 'bh_get_menu_item', $posts );
+	$min = (int) apply_filters( 'bh_featured_min', 6 );
+	if ( count( $ids ) < $min ) {
+		$ids = array_merge( $ids, bh_featured_fill( $limit - count( $ids ), $ids ) );
+	}
+	return array_map( 'bh_get_menu_item', array_slice( array_unique( $ids ), 0, $limit ) );
+}
+
+/**
+ * Fill the homepage carousel with restaurant-menu items that have a photo,
+ * best sellers first (Toast sales, last 60 days), so it never looks empty.
+ */
+function bh_featured_fill( $need, $exclude ) {
+	$cache = get_transient( 'bh_featured_fill' );
+	if ( ! is_array( $cache ) ) {
+		$pool = array();
+		foreach ( bh_get_menu( 'restaurant' ) as $sec ) {
+			foreach ( $sec['items'] as $it ) {
+				if ( $it['image_id'] ) {
+					$pool[ bh_toast_norm_name( $it['title'] ) ] = $it['id'];
+				}
+			}
+		}
+		$order = array();
+		if ( function_exists( 'bh_toast_top_items' ) && function_exists( 'bh_toast_has_data' ) && bh_toast_has_data() ) {
+			$top = bh_toast_top_items( bh_now()->modify( '-60 days' )->format( 'Y-m-d' ), bh_now()->format( 'Y-m-d' ), 80 );
+			foreach ( (array) $top as $row ) {
+				$name = bh_toast_norm_name( $row['item_name'] );
+				foreach ( $pool as $title => $id ) {
+					// "Large Sliced Brisket Sandwich" sells → "Sliced Brisket Sandwich" photo item counts too.
+					if ( $title === $name || ( strlen( $title ) > 5 && false !== strpos( $name, $title ) ) ) {
+						$order[ $id ] = true;
+					}
+				}
+			}
+		}
+		foreach ( $pool as $id ) {
+			$order[ $id ] = true; // Remaining photo items in menu order.
+		}
+		$cache = array_keys( $order );
+		set_transient( 'bh_featured_fill', $cache, 6 * HOUR_IN_SECONDS );
+	}
+	return array_slice( array_values( array_diff( $cache, $exclude ) ), 0, max( 0, $need ) );
+}
+
+function bh_toast_norm_name( $name ) {
+	$name = str_replace( array( "\u{2019}", "\u{2018}" ), "'", html_entity_decode( (string) $name, ENT_QUOTES, 'UTF-8' ) );
+	return strtolower( trim( preg_replace( '/\s+/', ' ', $name ) ) );
 }
 
 /**
