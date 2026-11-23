@@ -112,7 +112,7 @@ jobs:
             ssh-keyscan -p "$PORT" "$HOST" > ~/.ssh/known_hosts
           fi
           chmod 644 ~/.ssh/known_hosts
-          { echo "DHOST=$HOST"; echo "DUSER=$DUSER"; echo "DPORT=$PORT"; echo "DREMOTE=$REMOTE"; } >> "$GITHUB_ENV"
+          { echo "DHOST=$HOST"; echo "DUSER=$DUSER"; echo "DPORT=$PORT"; echo "DREMOTE=$REMOTE"; echo "DTARGET=$TARGET"; } >> "$GITHUB_ENV"
 
       - name: Sync theme and plugin
         run: |
@@ -121,6 +121,13 @@ jobs:
           REL="${REMOTE#\~}"; REL="${REL#/}"
           RESOLVED=$(ssh -i ~/.ssh/deploy_key -p "${PORT:-18765}" "$USER@$HOST" \
             "for p in '$REMOTE' \"\$HOME/$REL\"; do if [ -d \"\$p/wp-content\" ]; then cd \"\$p\" && pwd; exit 0; fi; done; exit 1") || RESOLVED=""
+          if [ -z "$RESOLVED" ] && [ "${DTARGET:-staging}" = "production" ]; then
+            # Path secret wrong/empty: use the single bighamsbbq.com install the production login can see.
+            FOUND=$(ssh -i ~/.ssh/deploy_key -p "${PORT:-18765}" "$USER@$HOST" 'find -L "$HOME/www" -maxdepth 3 -type d -name wp-content 2>/dev/null | sed "s#/wp-content\$##"' | grep -i bighamsbbq || true)
+            if [ "$(printf '%s\n' "$FOUND" | grep -c .)" = "1" ]; then
+              RESOLVED="$FOUND"; echo "::warning::SG_PROD_REMOTE_PATH did not match; using the bighamsbbq.com install found. Update the secret to: $FOUND"
+            fi
+          fi
           if [ -z "$RESOLVED" ]; then
             echo "::error::No WordPress found at SG_REMOTE_PATH. WordPress installs found on this account (use the folder that contains wp-content):"
             ssh -i ~/.ssh/deploy_key -p "${PORT:-18765}" "$USER@$HOST" \
