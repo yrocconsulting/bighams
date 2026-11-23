@@ -274,6 +274,24 @@ function bh_toast_norm( $name ) {
 }
 
 /**
+ * Natural size order: Single → Small → Medium → Large → Pan, combos after
+ * their plain sizes; anything else keeps Toast's order.
+ */
+function bh_sort_size_rows( $rows ) {
+	$rank = array( 'single' => 1, 'slice' => 1, 'regular' => 2, 'small' => 3, 'half' => 4, 'medium' => 5, 'large' => 6, 'quart' => 7, 'whole' => 8, 'pan' => 9, 'one' => 1, 'two' => 2, 'three' => 3, 'four' => 4 );
+	foreach ( $rows as $i => &$r ) {
+		$words    = preg_split( '/\s+/', strtolower( $r['label'] ) );
+		$r['_k']  = array( false !== strpos( strtolower( $r['label'] ), 'combo' ) ? 1 : 0, $rank[ $words[0] ?? '' ] ?? 50, $i );
+	}
+	unset( $r );
+	usort( $rows, fn( $a, $b ) => $a['_k'] <=> $b['_k'] );
+	return array_map( function ( $r ) {
+		unset( $r['_k'] );
+		return $r;
+	}, $rows );
+}
+
+/**
  * Split a size or variant out of an item name, using the section's name:
  *   "Pan of Pinto Beans" (Pinto Beans)              → Pinto Beans · "Pan"
  *   "Small Chopped BBQ Sandwich Combo" (Chopped BBQ) → Chopped BBQ Sandwich · "Small Combo"
@@ -461,6 +479,7 @@ function bh_toast_apply_display_rules( $sections, $data, &$report ) {
 					$r['label'] = '' === $r['label'] ? 'Regular' : $r['label'];
 				}
 				unset( $r );
+				$it['_rows'] = bh_sort_size_rows( $it['_rows'] );
 			}
 		}
 		unset( $it );

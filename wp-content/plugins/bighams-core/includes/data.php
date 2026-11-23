@@ -414,6 +414,15 @@ function bh_get_menu_categories() {
 	$more = array();
 	foreach ( $sections as $sec ) {
 		$key = $norm( $sec['name'] );
+		if ( ! isset( $where[ $key ] ) && false !== strpos( $key, 'special' ) ) {
+			// New Toast specials sections ("Tuesday Specials") join the Specials tab automatically.
+			foreach ( $cats as $cn => $c ) {
+				if ( false !== stripos( $cn, 'special' ) ) {
+					$where[ $key ] = array( $cn, 500 );
+					break;
+				}
+			}
+		}
 		if ( isset( $where[ $key ] ) ) {
 			$cats[ $where[ $key ][0] ]['sections'][ $where[ $key ][1] * 1000 + count( $cats[ $where[ $key ][0] ]['sections'] ) ] = $sec;
 		} else {
