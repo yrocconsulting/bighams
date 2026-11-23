@@ -94,7 +94,17 @@ jobs:
             rel="${path#\~}"; rel="${rel#/}"
             ssh "$host" "for p in '$path' \"\$HOME/$rel\"; do if [ -f \"\$p/wp-config.php\" ] || [ -f \"\$p/../wp-config.php\" ]; then cd \"\$p\" && pwd; exit 0; fi; done; exit 1"
           }
-          [ -n "$P_PATH" ] || { echo "::error::Add the SG_PROD_REMOTE_PATH secret"; exit 1; }
+          if [ -z "$P_PATH" ]; then
+            # No SG_PROD_REMOTE_PATH: use the single bighamsbbq.com install the production login can see.
+            FOUND=$(ssh prod 'find -L "$HOME/www" -maxdepth 3 -name wp-config.php 2>/dev/null | sed "s#/wp-config.php##"' | grep -i 'bighamsbbq' || true)
+            if [ "$(printf '%s\n' "$FOUND" | grep -c .)" = "1" ]; then
+              P_PATH="$FOUND"; echo "SG_PROD_REMOTE_PATH not set; using the bighamsbbq.com install found: $P_PATH"
+            else
+              echo "::error::SG_PROD_REMOTE_PATH is empty and no single bighamsbbq.com install was found. Installs visible to the production login:"
+              ssh prod 'find -L "$HOME/www" -maxdepth 3 -name wp-config.php 2>/dev/null | sed "s#/wp-config.php##; s#^$HOME#~#"'
+              exit 1
+            fi
+          fi
           S_ROOT=$(resolve staging "$S_PATH") || { echo "::error::No WordPress at SG_REMOTE_PATH on staging"; exit 1; }
           P_ROOT=$(resolve prod "$P_PATH") || {
             echo "::error::No WordPress at SG_PROD_REMOTE_PATH. WordPress installs this production login can see:"
