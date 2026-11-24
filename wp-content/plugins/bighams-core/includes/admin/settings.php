@@ -62,6 +62,7 @@ function bh_settings_sections() {
 		),
 		'Analytics' => array(
 			'ga4_id' => 'Google Analytics 4 Measurement ID (G-XXXXXXX) — optional',
+			'meta_pixel_id' => 'Meta (Facebook/Instagram) Pixel ID — fires on the live site only, not for logged-in staff',
 		),
 		'Toast POS' => array(
 			'toast_env'           => array( 'Environment', 'select', array( 'production' => 'Production', 'sandbox' => 'Sandbox' ) ),
@@ -279,6 +280,24 @@ add_action( 'admin_post_bh_toast_tool', function () {
 	wp_safe_redirect( add_query_arg( 'bh_msg', rawurlencode( $msg ), admin_url( 'admin.php?page=bighams-settings' ) ) );
 	exit;
 } );
+
+/* Meta Pixel: live domain only, not for logged-in staff, skipped if another plugin already loads it. */
+add_action( 'wp_head', function () {
+	$id = preg_replace( '/\D/', '', (string) bh_setting( 'meta_pixel_id' ) );
+	if ( ! $id || is_user_logged_in() || ! bh_is_production() || apply_filters( 'bh_skip_meta_pixel', defined( 'PIXEL_YOUR_SITE_VERSION' ) || class_exists( 'FacebookPixelPlugin\\FacebookForWordpress' ) ) ) {
+		return;
+	}
+	?>
+<!-- Meta Pixel -->
+<script>
+!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+fbq('init','<?php echo esc_js( $id ); ?>');
+fbq('track','PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none" alt="" src="https://www.facebook.com/tr?id=<?php echo esc_attr( $id ); ?>&amp;ev=PageView&amp;noscript=1"></noscript>
+<!-- End Meta Pixel -->
+	<?php
+}, 1 );
 
 /* GA4 (only if configured and no other plugin handles it). */
 add_action( 'wp_head', function () {

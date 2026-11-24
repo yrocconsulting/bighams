@@ -50,6 +50,7 @@ function bh_default_settings() {
 		'lead_webhook_url' => '',
 		'production_domain' => 'bighamsbbq.com',
 		'ga4_id'           => '',
+		'meta_pixel_id'    => '2095992931105972',
 		// Toast.
 		'toast_env'           => 'production',
 		'toast_client_id'     => '',
