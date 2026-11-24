@@ -181,6 +181,8 @@ $hero_id   = (int) get_theme_mod( 'bh_hero_image' );
 	</div>
 </section>
 
+<?php get_template_part( 'template-parts/loyalty' ); ?>
+
 <?php get_template_part( 'template-parts/reviews' ); ?>
 
 <?php

@@ -182,6 +182,45 @@
 		}
 	}
 
+	/* ---------- E-gift card pop-up: first visit only ---------- */
+	var gift = doc.getElementById('gift-pop');
+	if (gift && typeof gift.show === 'function') {
+		var gKey = 'bh_gift_' + gift.getAttribute('data-gift-pop');
+		var seen = false;
+		try { seen = !!localStorage.getItem(gKey); } catch (err) { seen = true; } // No storage → don't nag.
+		var params = new URLSearchParams(location.search);
+		if (params.has('giftcard')) seen = false; // ?giftcard previews it.
+		var markSeen = function () { try { localStorage.setItem(gKey, String(Date.now())); } catch (err) {} };
+		var closeGift = function () { if (gift.open) gift.close(); markSeen(); };
+		gift.addEventListener('close', markSeen);
+		gift.addEventListener('click', function (e) {
+			if (e.target === gift) closeGift(); // Backdrop click.
+			if (e.target.closest('[data-gift-close]')) closeGift();
+			if (e.target.closest('[data-gift-go]')) markSeen();
+			var copy = e.target.closest('[data-gift-copy]');
+			if (copy) {
+				var code = copy.getAttribute('data-gift-copy');
+				var done = function () {
+					copy.classList.add('is-copied');
+					var em = copy.querySelector('[data-gift-copied]');
+					if (em) em.textContent = 'Copied!';
+				};
+				if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code).then(done, done); else done();
+			}
+		});
+		var mobile = window.matchMedia('(max-width: 599px)').matches;
+		var open = function () {
+			if (seen || gift.open) return;
+			var order = doc.getElementById('order-modal');
+			if (order && order.open) return; // Never stack on the order picker.
+			seen = true;
+			if (mobile) gift.show(); else gift.showModal();
+		};
+		if (!seen) {
+			setTimeout(open, mobile ? 8000 : 5000);
+		}
+	}
+
 	/* ---------- Hero video: only on capable connections ---------- */
 	var video = doc.querySelector('[data-hero-video]');
 	if (video && !reduceMotion) {

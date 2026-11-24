@@ -491,6 +491,8 @@ function bh_dash_web( $from, $to, $prev_from, $prev_to, $locs ) {
 			array( 'Calls', number_format( $now['call'] ), bh_delta_html( $now['call'], $prev['call'] ) ),
 			array( 'Directions', number_format( $now['directions'] ), bh_delta_html( $now['directions'], $prev['directions'] ) ),
 			array( 'Delivery app clicks', number_format( $now['delivery'] ), bh_delta_html( $now['delivery'], $prev['delivery'] ) ),
+			array( "Pitmaster's Club sign-ups started", number_format( $now['loyalty'] ), bh_delta_html( $now['loyalty'], $prev['loyalty'] ) ),
+			array( 'Gift card clicks', number_format( $now['gift_card'] ), bh_delta_html( $now['gift_card'], $prev['gift_card'] ) ),
 		)
 	);
 	echo '<div class="bh-card"><h3>By location</h3><table class="bh-table"><thead><tr><th>Location</th>';

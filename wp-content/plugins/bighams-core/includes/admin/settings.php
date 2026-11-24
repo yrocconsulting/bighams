@@ -52,9 +52,17 @@ function bh_settings_sections() {
 			'yelp'      => array( 'Yelp URL', 'url' ),
 			'tiktok'    => array( 'TikTok URL', 'url' ),
 			'jobs_url'  => array( 'Jobs / careers URL', 'url' ),
-			'gift_card_url' => array( 'Gift cards URL (Toast)', 'url' ),
+
 			'rating_value' => 'Google rating (e.g. 4.6) — optional',
 			'rating_count' => 'Google review count — optional',
+		),
+		'Rewards & Gift Cards' => array(
+			'loyalty_url'    => array( "Pitmaster's Club sign-up URL (Toast rewards)", 'url' ),
+			'gift_card_url'  => array( 'E-gift cards URL (Toast)', 'url' ),
+			'giftcard_popup' => array( 'Show the e-gift card pop-up to first-time visitors', 'checkbox' ),
+			'giftcard_offer' => 'Pop-up offer text',
+			'giftcard_code'  => 'Promo code shown in the pop-up (leave blank for none)',
+			'giftcard_until' => array( 'Stop showing the pop-up after this date (optional)', 'date' ),
 		),
 		'Site Banner' => array(
 			'announcement'     => 'Announcement bar text (leave blank to hide)',
@@ -95,6 +103,9 @@ function bh_sanitize_settings( $in ) {
 					break;
 				case 'checkbox':
 					$out[ $key ] = $val ? '1' : '0';
+					break;
+				case 'date':
+					$out[ $key ] = preg_match( '/^\d{4}-\d{2}-\d{2}$/', (string) $val ) ? $val : '';
 					break;
 				case 'password':
 					// Blank = keep existing secret.
@@ -150,6 +161,8 @@ function bh_render_settings_page() {
 							printf( '<option value="%s"%s>%s</option>', esc_attr( $k ), selected( $val, $k, false ), esc_html( $l ) );
 						}
 						echo '</select>';
+					} elseif ( 'date' === $type ) {
+						printf( '<input type="date" id="bh-%1$s" name="%2$s" value="%3$s">', esc_attr( $key ), esc_attr( $name ), esc_attr( $val ) );
 					} elseif ( 'password' === $type ) {
 						printf( '<input type="password" id="bh-%1$s" name="%2$s" value="" class="regular-text" autocomplete="new-password" placeholder="%3$s">', esc_attr( $key ), esc_attr( $name ), $val ? '•••••••• (saved — leave blank to keep)' : '' );
 					} else {

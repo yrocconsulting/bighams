@@ -78,8 +78,11 @@ $phone     = bht_setting( 'phone' );
 				<?php if ( bht_setting( 'jobs_url' ) ) : ?>
 					<a href="<?php echo esc_url( bht_setting( 'jobs_url' ) ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'Careers', 'bighams' ); ?></a>
 				<?php endif; ?>
+				<?php if ( bht_setting( 'loyalty_url' ) ) : ?>
+					<a href="<?php echo esc_url( bht_setting( 'loyalty_url' ) ); ?>" target="_blank" rel="noopener"<?php echo bht_track( 'loyalty' ); // phpcs:ignore ?>><?php esc_html_e( "Pitmaster's Club", 'bighams' ); ?></a>
+				<?php endif; ?>
 				<?php if ( bht_setting( 'gift_card_url' ) ) : ?>
-					<a href="<?php echo esc_url( bht_setting( 'gift_card_url' ) ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'Gift Cards', 'bighams' ); ?></a>
+					<a href="<?php echo esc_url( bht_setting( 'gift_card_url' ) ); ?>" target="_blank" rel="noopener"<?php echo bht_track( 'gift_card' ); // phpcs:ignore ?>><?php esc_html_e( 'Gift Cards', 'bighams' ); ?></a>
 				<?php endif; ?>
 				<?php if ( get_privacy_policy_url() ) : ?>
 					<a href="<?php echo esc_url( get_privacy_policy_url() ); ?>"><?php esc_html_e( 'Privacy', 'bighams' ); ?></a>
@@ -99,6 +102,7 @@ $phone     = bht_setting( 'phone' );
 </nav>
 
 <?php get_template_part( 'template-parts/order-modal' ); ?>
+<?php get_template_part( 'template-parts/gift-popup' ); ?>
 
 <?php wp_footer(); ?>
 </body>

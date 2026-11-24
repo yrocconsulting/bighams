@@ -23,9 +23,11 @@
 				lead_catering: ['Lead', { content_category: 'Catering request' }],
 				lead_party: ['Lead', { content_category: 'Private party request' }],
 				call: ['Contact', {}],
-				directions: ['FindLocation', {}]
+				directions: ['FindLocation', {}],
+				gift_card: ['InitiateCheckout', { content_category: 'Gift card' }]
 			}[e];
 			if (meta) { if (loc) meta[1].location_id = loc; window.fbq('track', meta[0], meta[1]); }
+			if (e === 'loyalty') window.fbq('trackCustom', 'PitmastersClubSignupClick');
 		}
 		// Mirror to GA4 / GTM if present.
 		if (window.gtag) window.gtag('event', 'bh_' + e, { location_id: a.getAttribute('data-bh-loc') || 0 });

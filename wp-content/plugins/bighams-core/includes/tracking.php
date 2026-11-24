@@ -39,6 +39,8 @@ function bh_track_events() {
 		'lead_catering'  => 'Catering requests',
 		'lead_party'     => 'Private event requests',
 		'menu_view'      => 'Menu views',
+		'loyalty'        => "Pitmaster's Club sign-up clicks",
+		'gift_card'      => 'Gift card clicks',
 	);
 }
 

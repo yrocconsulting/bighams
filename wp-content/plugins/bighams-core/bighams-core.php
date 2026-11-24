@@ -64,6 +64,21 @@ function bh_core_deactivate() {
  * does not fire on a file-sync deploy).
  */
 /**
+ * Fill the e-gift card URL on sites that saved Settings with it blank.
+ */
+add_action( 'init', function () {
+	if ( get_option( 'bh_migr_giftcard_url' ) ) {
+		return;
+	}
+	$opts = get_option( 'bighams_settings' );
+	if ( is_array( $opts ) && empty( $opts['gift_card_url'] ) ) {
+		$opts['gift_card_url'] = bh_default_settings()['gift_card_url'];
+		update_option( 'bighams_settings', $opts );
+	}
+	update_option( 'bh_migr_giftcard_url', 1, false );
+}, 1 );
+
+/**
  * Add the categorical-menu combine rules to sites that already saved Settings.
  */
 add_action( 'init', function () {
