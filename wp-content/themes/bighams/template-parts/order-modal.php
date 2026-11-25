@@ -7,9 +7,9 @@ defined( 'ABSPATH' ) || exit;
 $locations = bht_locations();
 ?>
 <dialog class="order-modal" id="order-modal" aria-labelledby="order-modal-title">
-	<div class="order-modal__inner">
+	<div class="order-modal__inner" tabindex="-1" autofocus>
 		<header class="order-modal__head">
-			<p class="eyebrow"><?php esc_html_e( 'Pickup · Delivery', 'bighams' ); ?></p>
+			<p class="eyebrow"><?php esc_html_e( 'Order online', 'bighams' ); ?></p>
 			<h2 id="order-modal-title"><?php esc_html_e( 'Choose your Bigham\'s', 'bighams' ); ?></h2>
 			<button class="order-modal__close" type="button" data-order-close aria-label="<?php esc_attr_e( 'Close', 'bighams' ); ?>"><?php echo bht_icon( 'close' ); // phpcs:ignore ?></button>
 		</header>
@@ -25,19 +25,9 @@ $locations = bht_locations();
 						</div>
 						<div class="order-list__actions">
 							<?php if ( $loc['order_url'] ) : ?>
-								<a class="btn btn--primary" href="<?php echo esc_url( $loc['order_url'] ); ?>" target="_blank" rel="noopener"<?php echo bht_track( 'order', $loc['id'] ); // phpcs:ignore ?>><?php esc_html_e( 'Order pickup', 'bighams' ); ?><span class="screen-reader-text"> — <?php echo esc_html( $loc['title'] ); ?> (<?php esc_html_e( 'opens Toast in a new tab', 'bighams' ); ?>)</span></a>
+								<a class="btn btn--primary" href="<?php echo esc_url( $loc['order_url'] ); ?>" target="_blank" rel="noopener"<?php echo bht_track( 'order', $loc['id'] ); // phpcs:ignore ?>><?php esc_html_e( 'Order Online', 'bighams' ); ?><span class="screen-reader-text"> — <?php echo esc_html( $loc['title'] ); ?> (<?php esc_html_e( 'opens Toast in a new tab', 'bighams' ); ?>)</span></a>
 							<?php else : ?>
 								<a class="btn btn--primary" href="tel:<?php echo esc_attr( $loc['phone_e164'] ); ?>"><?php esc_html_e( 'Call to order', 'bighams' ); ?></a>
-							<?php endif; ?>
-							<?php if ( $loc['ubereats_url'] || $loc['doordash_url'] ) : ?>
-								<div class="order-list__delivery">
-									<?php if ( $loc['ubereats_url'] ) : ?>
-										<a href="<?php echo esc_url( $loc['ubereats_url'] ); ?>" target="_blank" rel="noopener"<?php echo bht_track( 'delivery', $loc['id'] ); // phpcs:ignore ?>>Uber Eats</a>
-									<?php endif; ?>
-									<?php if ( $loc['doordash_url'] ) : ?>
-										<a href="<?php echo esc_url( $loc['doordash_url'] ); ?>" target="_blank" rel="noopener"<?php echo bht_track( 'delivery', $loc['id'] ); // phpcs:ignore ?>>DoorDash</a>
-									<?php endif; ?>
-								</div>
 							<?php endif; ?>
 						</div>
 					</li>

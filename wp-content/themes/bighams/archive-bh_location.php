@@ -51,7 +51,7 @@ get_template_part(
 						<?php endif; ?>
 						<div class="btn-row">
 							<?php if ( $loc['order_url'] ) : ?>
-								<a class="btn btn--primary" href="<?php echo esc_url( $loc['order_url'] ); ?>" target="_blank" rel="noopener"<?php echo bht_track( 'order', $loc['id'] ); // phpcs:ignore ?>><?php esc_html_e( 'Order pickup', 'bighams' ); ?><span class="screen-reader-text"> — <?php echo esc_html( $loc['title'] ); ?></span></a>
+								<a class="btn btn--primary" href="<?php echo esc_url( $loc['order_url'] ); ?>" target="_blank" rel="noopener"<?php echo bht_track( 'order', $loc['id'] ); // phpcs:ignore ?>><?php esc_html_e( 'Order Online', 'bighams' ); ?><span class="screen-reader-text"> — <?php echo esc_html( $loc['title'] ); ?></span></a>
 							<?php endif; ?>
 							<a class="btn btn--outline" href="<?php echo esc_url( $loc['directions_url'] ); ?>" target="_blank" rel="noopener"<?php echo bht_track( 'directions', $loc['id'] ); // phpcs:ignore ?>><?php esc_html_e( 'Directions', 'bighams' ); ?></a>
 							<a class="link-arrow" href="<?php echo esc_url( $loc['permalink'] ); ?>"><?php esc_html_e( 'Location details', 'bighams' ); ?> <?php echo bht_icon( 'arrow' ); // phpcs:ignore ?></a>

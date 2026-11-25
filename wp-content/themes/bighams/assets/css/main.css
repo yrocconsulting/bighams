@@ -168,7 +168,7 @@ input, select, textarea { font: inherit; }
 .site-header {
 	position: sticky; top: 0; z-index: 100; background: rgb(28 23 21 / .96); color: #fff;
 	border-bottom: 1px solid rgb(255 255 255 / .06);
-	backdrop-filter: saturate(140%) blur(8px);
+	/* No backdrop-filter here: it would make the full-screen mobile menu size itself to the header. */
 }
 .admin-bar .site-header { top: 46px; }
 @media (min-width: 783px) { .admin-bar .site-header { top: 32px; } }
@@ -208,6 +208,17 @@ input, select, textarea { font: inherit; }
 }
 .admin-bar .nav { top: calc(var(--header-h) + 46px); }
 .nav.is-open { transform: none; opacity: 1; visibility: visible; }
+/* Narrow phones (iPhone SE etc.): keep logo, Order and ☰ on screen. */
+@media (max-width: 400px) {
+	.site-header__inner { gap: .5rem; }
+	.wordmark--header { gap: .45rem; }
+	.wordmark--header .wordmark__badge { width: 34px; height: 34px; }
+	.wordmark--header .wordmark__name { font-size: 1.4rem; }
+	.wordmark--header .wordmark__sub { font-size: .56rem; letter-spacing: .14em; margin-top: .2rem; }
+	.site-header__actions { gap: .35rem; }
+	.site-header__actions .btn { min-height: 40px; padding: .5rem .8rem; }
+	.nav-toggle { width: 40px; }
+}
 .nav__list { list-style: none; margin: 0; padding: 0; }
 .nav__list a {
 	display: block; padding: .9rem 0; color: #fff; text-decoration: none; font-family: var(--f-head); font-weight: 800;
@@ -679,8 +690,31 @@ body.nav-open { overflow: hidden; }
 .order-list__addr { font-size: var(--fs-sm); color: #b9aca2; margin: 0 0 .35rem; }
 .order-list__actions { display: flex; flex-direction: column; gap: .4rem; align-items: stretch; }
 .order-list__actions .btn--primary { --b-bg: var(--c-maroon-l); --b-bd: var(--c-maroon-l); }
-.order-list__delivery { display: flex; gap: .75rem; justify-content: center; font-size: var(--fs-sm); }
-.order-list__delivery a { color: #f2c9a1; }
+.order-modal__inner:focus { outline: none; }
+/* Phones: compact list so all three locations fit without scrolling. */
+@media (max-width: 599px) {
+	.order-modal { width: calc(100% - 1rem); max-height: calc(100dvh - 1rem); }
+	.order-modal__inner { padding: var(--sp-4); }
+	.order-modal__head { margin-bottom: var(--sp-3); padding-right: 2.75rem; }
+	.order-modal__head .eyebrow { display: none; }
+	.order-modal__head h2 { font-size: 1.5rem; line-height: 1.1; }
+	.order-modal__close { width: 38px; height: 38px; top: -.35rem; right: -.35rem; }
+	.order-list { gap: .5rem; }
+	.order-list__item { grid-template-columns: 1fr auto; align-items: center; gap: .6rem; padding: .7rem .8rem; }
+	.order-list__info { min-width: 0; }
+	.order-list__item h3 { font-size: 1.05rem; line-height: 1.15; margin: 0; }
+	.order-list__addr { font-size: .78rem; margin: .1rem 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+	.order-list__item .status { font-size: .8rem; margin: 0; }
+	.order-list__actions .btn { min-height: 42px; padding: .5rem .85rem; font-size: .78rem; white-space: nowrap; }
+	.order-modal__foot { margin-top: var(--sp-3); padding-top: var(--sp-3); font-size: .85rem; }
+	.order-modal__foot .icon { width: 18px; height: 18px; }
+}
+@media (max-width: 599px) and (max-height: 620px) {
+	.order-list__addr { display: none; }
+	.order-list__item { padding: .6rem .75rem; }
+	.order-modal__head h2 { font-size: 1.3rem; }
+	.order-modal__foot { margin-top: .6rem; padding-top: .6rem; }
+}
 .order-modal__foot { display: flex; gap: .75rem; align-items: center; margin-top: var(--sp-5); padding-top: var(--sp-4); border-top: 1px solid rgb(255 255 255 / .1); }
 .order-modal__foot .icon { color: var(--c-brass); flex: none; }
 .order-modal__foot p { margin: 0; }
@@ -818,3 +852,15 @@ body.modal-open { overflow: hidden; }
 	.gift-pop__close { top: .35rem; right: .35rem; }
 }
 @media (prefers-reduced-motion: reduce) { .gift-pop[open] { animation: none; } }
+
+/* Mobile menu: fit on one screen (placed last so it wins over base rules). */
+@media (max-width: 1179px) {
+	.nav { padding-top: var(--sp-4); padding-bottom: var(--sp-5); }
+	.nav__list a { font-size: 1.35rem; padding: .7rem 0; }
+	.nav__mobile-extra { margin-top: var(--sp-4); gap: var(--sp-2); }
+}
+@media (max-width: 1179px) and (max-height: 620px) {
+	.nav { padding-top: var(--sp-3); }
+	.nav__list a { font-size: 1.2rem; padding: .55rem 0; }
+	.nav__mobile-extra { margin-top: var(--sp-3); gap: .25rem; }
+}

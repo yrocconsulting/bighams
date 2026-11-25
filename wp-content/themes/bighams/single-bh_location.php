@@ -29,7 +29,7 @@ while ( have_posts() ) :
 
 	$actions = '';
 	if ( $loc['order_url'] ) {
-		$actions .= '<a class="btn btn--primary btn--lg" href="' . esc_url( $loc['order_url'] ) . '" target="_blank" rel="noopener"' . bht_track( 'order', $loc['id'] ) . '>' . bht_icon( 'bag' ) . ' ' . esc_html__( 'Order pickup', 'bighams' ) . '</a>';
+		$actions .= '<a class="btn btn--primary btn--lg" href="' . esc_url( $loc['order_url'] ) . '" target="_blank" rel="noopener"' . bht_track( 'order', $loc['id'] ) . '>' . bht_icon( 'bag' ) . ' ' . esc_html__( 'Order Online', 'bighams' ) . '</a>';
 	}
 	$actions .= '<a class="btn btn--outline-light btn--lg" href="tel:' . esc_attr( $loc['phone_e164'] ) . '">' . bht_icon( 'phone' ) . ' ' . esc_html( $loc['phone'] ) . '</a>';
 
@@ -90,13 +90,6 @@ while ( have_posts() ) :
 						<a class="btn btn--outline" href="<?php echo esc_url( $loc['catering_url'] ); ?>" target="_blank" rel="noopener"<?php echo bht_track( 'catering_order', $loc['id'] ); // phpcs:ignore ?>><?php esc_html_e( 'Order catering', 'bighams' ); ?></a>
 					<?php endif; ?>
 				</div>
-				<?php if ( $loc['ubereats_url'] || $loc['doordash_url'] ) : ?>
-					<p class="loc-detail__delivery"><?php esc_html_e( 'Delivery:', 'bighams' ); ?>
-						<?php if ( $loc['ubereats_url'] ) : ?><a href="<?php echo esc_url( $loc['ubereats_url'] ); ?>" target="_blank" rel="noopener"<?php echo bht_track( 'delivery', $loc['id'] ); // phpcs:ignore ?>>Uber Eats</a><?php endif; ?>
-						<?php if ( $loc['ubereats_url'] && $loc['doordash_url'] ) : ?> · <?php endif; ?>
-						<?php if ( $loc['doordash_url'] ) : ?><a href="<?php echo esc_url( $loc['doordash_url'] ); ?>" target="_blank" rel="noopener"<?php echo bht_track( 'delivery', $loc['id'] ); // phpcs:ignore ?>>DoorDash</a><?php endif; ?>
-					</p>
-				<?php endif; ?>
 			</div>
 			<div class="loc-detail__map">
 				<iframe title="<?php echo esc_attr( sprintf( __( 'Map of %s', 'bighams' ), $loc['title'] ) ); ?>" src="<?php echo esc_url( bht_map_embed( $loc ) ); ?>" width="800" height="600" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>

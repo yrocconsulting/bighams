@@ -98,7 +98,7 @@ $hero_id   = (int) get_theme_mod( 'bh_hero_image' );
 		</ul>
 		<div class="featured__actions">
 			<a class="btn btn--light" href="<?php echo esc_url( home_url( '/menu/' ) ); ?>"><?php esc_html_e( 'See the full menu', 'bighams' ); ?></a>
-			<button class="btn btn--outline-light" type="button" data-order-open aria-haspopup="dialog" aria-controls="order-modal"><?php esc_html_e( 'Order for pickup', 'bighams' ); ?></button>
+			<button class="btn btn--outline-light" type="button" data-order-open aria-haspopup="dialog" aria-controls="order-modal"><?php esc_html_e( 'Order Online', 'bighams' ); ?></button>
 		</div>
 	</div>
 </section>
