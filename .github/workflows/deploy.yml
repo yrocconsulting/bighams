@@ -1,8 +1,8 @@
 name: Deploy to SiteGround
 
-# Pushes to `main` deploy the theme + plugin to staging (bighams.yroc.host).
-# Production (bighamsbbq.com) deploys only when run manually: Actions → Deploy to
-# SiteGround → Run workflow → target: production.
+# Deploys the theme + plugin to the live site (bighamsbbq.com). Runs only when
+# started manually: Actions → Deploy to SiteGround → Run workflow.
+# (The old staging site, bighams.yroc.host, has been retired.)
 #
 # Secrets: SG_SSH_HOST, SG_SSH_USER, SG_SSH_PORT, SG_SSH_PRIVATE_KEY,
 # SG_SSH_KEY_PASSPHRASE (optional), SG_SSH_KNOWN_HOSTS (optional), SG_REMOTE_PATH
@@ -10,18 +10,13 @@ name: Deploy to SiteGround
 # SiteGround SSH login, add SG_PROD_SSH_HOST / _USER / _PORT / _PRIVATE_KEY /
 # _KEY_PASSPHRASE; any that are missing fall back to the staging values.
 on:
-  push:
-    branches: [main]
-    paths:
-      - "wp-content/**"
-      - ".github/workflows/deploy.yml"
   workflow_dispatch:
     inputs:
       target:
         description: "Which site to deploy to"
         type: choice
-        options: [staging, production]
-        default: staging
+        options: [production]
+        default: production
       menu_import:
         description: "Toast menu import after deploy"
         type: choice
@@ -45,7 +40,7 @@ on:
         default: "https://bighamsbbq.com"
 
 concurrency:
-  group: deploy-${{ github.event.inputs.target || 'staging' }}
+  group: deploy-${{ github.event.inputs.target || 'production' }}
   cancel-in-progress: false
 
 jobs:
@@ -68,13 +63,13 @@ jobs:
   deploy:
     needs: lint
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.target || 'staging' }}
+    environment: ${{ github.event.inputs.target || 'production' }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Configure SSH
         env:
-          TARGET: ${{ github.event.inputs.target || 'staging' }}
+          TARGET: ${{ github.event.inputs.target || 'production' }}
           S_KEY: ${{ secrets.SG_SSH_PRIVATE_KEY }}
           S_PASS: ${{ secrets.SG_SSH_KEY_PASSPHRASE }}
           S_HOST: ${{ secrets.SG_SSH_HOST }}
@@ -121,7 +116,7 @@ jobs:
           REL="${REMOTE#\~}"; REL="${REL#/}"
           RESOLVED=$(ssh -i ~/.ssh/deploy_key -p "${PORT:-18765}" "$USER@$HOST" \
             "for p in '$REMOTE' \"\$HOME/$REL\"; do if [ -d \"\$p/wp-content\" ]; then cd \"\$p\" && pwd; exit 0; fi; done; exit 1") || RESOLVED=""
-          if [ -z "$RESOLVED" ] && [ "${DTARGET:-staging}" = "production" ]; then
+          if [ -z "$RESOLVED" ] && [ "${DTARGET:-production}" = "production" ]; then
             # Path secret wrong/empty: use the single bighamsbbq.com install the production login can see.
             FOUND=$(ssh -i ~/.ssh/deploy_key -p "${PORT:-18765}" "$USER@$HOST" 'find -L "$HOME/www" -maxdepth 3 -type d -name wp-content 2>/dev/null | sed "s#/wp-content\$##"' | grep -i bighamsbbq || true)
             if [ "$(printf '%s\n' "$FOUND" | grep -c .)" = "1" ]; then
@@ -146,7 +141,7 @@ jobs:
 
       - name: Post-deploy (flush caches)
         env:
-          TARGET: ${{ github.event.inputs.target || 'staging' }}
+          TARGET: ${{ github.event.inputs.target || 'production' }}
           GO_LIVE: ${{ github.event.inputs.go_live || 'false' }}
           LIVE_URL: ${{ github.event.inputs.live_url || 'https://bighamsbbq.com' }}
           MENU_IMPORT: ${{ github.event.inputs.menu_import || 'none' }}

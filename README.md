@@ -2,7 +2,7 @@
 
 Custom WordPress theme + companion plugin for **Bigham's Smokehouse** (Lubbock, TX · est. 1978 · 3 locations), replacing the current SpotHopper site at bighamsbbq.com.
 
-- **Staging:** https://bighams.yroc.host (SiteGround). Indexing is blocked automatically on every domain except `bighamsbbq.com`.
+- **Live:** https://bighamsbbq.com (SiteGround). The old staging site (bighams.yroc.host) is retired; indexing is blocked automatically on every domain except `bighamsbbq.com`.
 - **Built by:** Yroc Consulting
 
 ```

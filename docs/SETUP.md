@@ -33,7 +33,7 @@ Toast offers read-only **Standard API access** to restaurant owners.
 What's stored: daily totals, item quantities and sales, and orders per hour for each location. No customer names, cards or contact details.
 
 > WP-Cron runs when someone visits the site. On SiteGround, set a real cron job (Site Tools → Devs → Cron Jobs) to run every 15 minutes:
-> `cd /home/customer/www/bighams.yroc.host/public_html && wp cron event run --due-now >/dev/null 2>&1`
+> `cd /home/customer/www/bighamsbbq.com/public_html && wp cron event run --due-now >/dev/null 2>&1`
 > Then add `define( 'DISABLE_WP_CRON', true );` to wp-config.php.
 
 **Website menu = Toast menu.** With the credentials in, go to *Bigham's → Settings → Toast tools*. Click **Preview menu import** to see what will be added, repriced or removed, then **Import menu now**. After that the website shows exactly what Toast online ordering shows: the same sections, items, order and prices, with only online-visible items included. Photos, badges, homepage features and longer website descriptions are kept. Items not on Toast move to Draft and are never deleted. Set *Website menu source* to *Sync from Toast automatically every morning* to keep them in step without clicking. The menu is copied from the first location with a GUID unless another Restaurant GUID is set. Toast menus whose name contains "Catering", "Happy Hour" or "Special" feed those sections of the site.
@@ -73,4 +73,4 @@ The website's own form (below) is still there. Set *Where catering & party reque
    - Point each Google Business Profile's website link to its location page.
    - Add an SMTP plugin and a real cron job (see launch-check).
    - Keep SpotHopper active until the new site has served for a few days, then cancel it.
-8. From then on, **pushes to `main` deploy to staging only**. Production deploys are manual (**target: production**).
+8. Staging is now retired. Deploys go to the live site only and are started manually (Actions → *Deploy to SiteGround* → Run workflow).
